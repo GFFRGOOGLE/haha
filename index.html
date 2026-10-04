@@ -2,27 +2,22 @@
 <html lang="ru">
 <head>
 <meta charset="UTF-8">
-<title>ХАХАХА ХАХАХА ХАХАХА</title>
+<title>ХАХАХА — Поиск пар + Достижения</title>
 <style>
-  * {
-    margin: 0;
-    padding: 0;
-    box-sizing: border-box;
-  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
 
   html, body {
-    min-height: 100%;
+    height: 100%;
     font-family: 'Arial Black', 'Impact', sans-serif;
-    overflow-x: hidden;
+    overflow: hidden;
+    user-select: none;
   }
 
   body {
     background: linear-gradient(135deg, #1a0033, #4b0082, #ff1493, #ff8c00, #ffd700);
     background-size: 500% 500%;
     animation: gradientShift 15s ease infinite;
-    padding: 40px 20px;
     position: relative;
-    overflow-y: auto;
   }
 
   @keyframes gradientShift {
@@ -31,7 +26,16 @@
     100% { background-position: 0% 50%; }
   }
 
-  /* Плавающие пузыри */
+  body.rainbow-mode {
+    background: linear-gradient(90deg, #ff0000, #ff8800, #ffff00, #00ff00, #00ffff, #0080ff, #ff00ff, #ff0000);
+    background-size: 400% 100%;
+    animation: rainbowShift 3s linear infinite;
+  }
+  @keyframes rainbowShift {
+    0%   { background-position: 0% 50%; }
+    100% { background-position: 400% 50%; }
+  }
+
   .bubble {
     position: fixed;
     border-radius: 50%;
@@ -40,179 +44,1557 @@
     pointer-events: none;
     z-index: 1;
   }
-
   @keyframes floatUp {
-    0% {
-      transform: translateY(110vh) scale(0.4);
-      opacity: 0;
-    }
+    0% { transform: translateY(110vh) scale(0.4); opacity: 0; }
     10% { opacity: 1; }
     90% { opacity: 1; }
-    100% {
-      transform: translateY(-20vh) scale(1.3);
-      opacity: 0;
-    }
+    100% { transform: translateY(-20vh) scale(1.3); opacity: 0; }
   }
 
-  /* Контейнер со всеми хахаха */
-  .haha-container {
-    position: relative;
-    z-index: 5;
-    max-width: 1400px;
-    margin: 0 auto;
-    text-align: center;
-    line-height: 1.1;
+  /* HUD */
+  .hud {
+    position: fixed; top: 15px; left: 0; right: 0;
+    display: flex; justify-content: space-around; gap: 10px;
+    padding: 0 15px; z-index: 200; pointer-events: none;
+  }
+  .hud-item {
+    background: rgba(0, 0, 0, 0.6);
+    backdrop-filter: blur(10px);
+    border: 2px solid rgba(255, 255, 255, 0.4);
+    border-radius: 15px; padding: 8px 18px;
+    color: #fff; font-size: 15px;
+    text-shadow: 0 0 10px #ff00ff;
+    box-shadow: 0 0 20px rgba(255, 0, 255, 0.5);
+    min-width: 110px; text-align: center;
+  }
+  .hud-item .value { font-size: 22px; color: #ffff00; text-shadow: 0 0 15px #ff0; }
+
+  #game-area { position: fixed; inset: 0; z-index: 50; overflow: hidden; }
+
+  /* ПЛИТКИ */
+  .tile {
+    position: absolute; transform: translate(-50%, -50%);
+    padding: 12px 22px; border-radius: 14px;
+    font-size: 20px; font-weight: 900; color: #fff;
+    cursor: pointer; white-space: nowrap;
+    background: linear-gradient(135deg, #ff1493, #ff8c00);
+    border: 3px solid #fff;
+    box-shadow: 0 0 12px #ff1493, 0 0 24px rgba(255, 20, 147, 0.6), inset 0 0 12px rgba(255,255,255,0.3);
+    transition: transform 0.15s ease, box-shadow 0.2s ease, filter 0.3s ease;
+    text-shadow: 0 0 8px rgba(0, 0, 0, 0.6);
+    will-change: transform;
+  }
+  .tile:hover:not(.blocked):not(.matched) {
+    transform: translate(-50%, -50%) scale(1.12);
+    box-shadow: 0 0 22px #ff1493, 0 0 44px #ff1493, 0 0 66px #ff00ff, inset 0 0 15px rgba(255,255,255,0.5);
+  }
+  .tile.blocked {
+    filter: brightness(0.35) saturate(0.4);
+    cursor: not-allowed;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.7);
+  }
+  .tile.blocked::after {
+    content: '🔒'; position: absolute;
+    top: -10px; right: -10px; font-size: 14px;
+    filter: none; opacity: 0.85;
+  }
+  .tile.selected {
+    transform: translate(-50%, -50%) scale(1.18);
+    box-shadow: 0 0 25px #ffff00, 0 0 50px #ffff00, 0 0 80px #ff8c00, inset 0 0 20px rgba(255,255,255,0.7);
+    border-color: #ffff00;
+    animation: selectedPulse 0.8s ease-in-out infinite;
+  }
+  @keyframes selectedPulse {
+    0%, 100% { box-shadow: 0 0 25px #ffff00, 0 0 50px #ffff00, 0 0 80px #ff8c00; }
+    50% { box-shadow: 0 0 35px #ffff00, 0 0 70px #ffff00, 0 0 100px #ff8c00; }
+  }
+  .tile.matched { animation: matchPop 0.5s ease-out forwards; pointer-events: none; }
+  @keyframes matchPop {
+    0% { transform: translate(-50%, -50%) scale(1.18); opacity: 1; }
+    40% { transform: translate(-50%, -50%) scale(1.4); opacity: 1; box-shadow: 0 0 40px #0f0, 0 0 80px #0f0, 0 0 120px #0f0; border-color: #0f0; }
+    100% { transform: translate(-50%, -50%) scale(0); opacity: 0; }
+  }
+  .tile.wrong {
+    animation: shake 0.4s ease;
+    background: linear-gradient(135deg, #666, #333) !important;
+  }
+  @keyframes shake {
+    0%, 100% { transform: translate(-50%, -50%) translateX(0); }
+    20% { transform: translate(-50%, -50%) translateX(-10px); }
+    40% { transform: translate(-50%, -50%) translateX(10px); }
+    60% { transform: translate(-50%, -50%) translateX(-8px); }
+    80% { transform: translate(-50%, -50%) translateX(8px); }
   }
 
-  .haha {
-    display: inline-block;
-    font-size: clamp(30px, 5vw, 90px);
-    font-weight: 900;
-    color: #fff;
-    text-transform: uppercase;
-    margin: 5px 10px;
+  /* Кнопки внизу */
+  .bottom-btn {
+    position: fixed; z-index: 300;
+    background: rgba(0, 0, 0, 0.7);
+    backdrop-filter: blur(10px);
+    border: 2px solid rgba(255, 215, 0, 0.6);
+    border-radius: 12px; padding: 11px 18px;
+    color: #ffd700;
+    font-family: inherit; font-size: 14px; font-weight: 900;
+    cursor: pointer; text-shadow: 0 0 8px #ffd700;
+    box-shadow: 0 0 15px rgba(255, 215, 0, 0.5);
+    transition: all 0.25s;
+    display: flex; align-items: center; gap: 8px;
     letter-spacing: 0.02em;
-    text-shadow:
-      0 0 8px #fff,
-      0 0 20px #ff00ff,
-      0 0 40px #ff00ff,
-      0 0 60px #ff00ff;
-    animation: bounce 1.5s ease-in-out infinite;
-    cursor: pointer;
-    user-select: none;
-    transform-origin: center;
-    transition: transform 0.3s ease;
+  }
+  .bottom-btn:hover { transform: scale(1.05); box-shadow: 0 0 25px rgba(255, 215, 0, 0.9); }
+  .bottom-btn:active { transform: scale(0.97); }
+
+  #menu-btn { bottom: 15px; left: 15px; }
+  #shuffle-btn {
+    bottom: 15px; right: 15px;
+    background: linear-gradient(135deg, #ff1493, #ff8c00);
+    border-color: #fff; color: #fff;
+    text-shadow: 0 0 8px #000;
+    box-shadow: 0 0 20px #ff1493;
+  }
+  #shuffle-btn:hover { box-shadow: 0 0 30px #ff1493, 0 0 60px #ff1493; }
+
+  .bottom-btn .mini-bar {
+    width: 50px; height: 6px;
+    background: rgba(255,255,255,0.15);
+    border-radius: 4px; overflow: hidden;
+  }
+  .bottom-btn .mini-bar > div {
+    height: 100%;
+    background: linear-gradient(90deg, #ffd700, #ff8c00);
+    box-shadow: 0 0 8px #ffd700;
+    transition: width 0.5s ease;
+    border-radius: 4px;
   }
 
-  .haha:nth-child(3n) {
-    animation-delay: 0.1s;
-    color: #ffff00;
-    text-shadow: 0 0 8px #fff, 0 0 20px #ffff00, 0 0 40px #ff8c00;
+  /* ТОСТ */
+  .toast {
+    position: fixed; top: 100px; left: 50%;
+    transform: translateX(-50%) translateY(-30px);
+    background: linear-gradient(135deg, #ffd700, #ff8c00);
+    color: #000; padding: 14px 28px;
+    border-radius: 50px; font-size: 17px; font-weight: 900;
+    z-index: 1000; border: 3px solid #fff;
+    box-shadow: 0 0 30px #ffd700, 0 0 60px #ff8c00;
+    opacity: 0;
+    transition: all 0.4s cubic-bezier(0.2, 0.9, 0.4, 1);
+    pointer-events: none; text-align: center; max-width: 90vw;
+  }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0) scale(1.05); }
+
+  /* POPUP ДОСТИЖЕНИЯ */
+  .achievement-popup {
+    position: fixed; top: 90px; right: -420px;
+    display: flex; align-items: center; gap: 14px;
+    padding: 16px 20px; min-width: 330px; max-width: 400px;
+    background: linear-gradient(135deg, #0a0018, #2a0050);
+    border-radius: 18px; border: 3px solid #fff;
+    z-index: 2000;
+    transition: right 0.55s cubic-bezier(0.2, 0.9, 0.4, 1);
+    color: #fff;
+  }
+  .achievement-popup.show { right: 20px; }
+
+  .rarity-bronze {
+    border-color: #cd7f32 !important;
+    box-shadow: 0 0 25px #cd7f32, 0 0 60px rgba(205,127,50,0.6), inset 0 0 20px rgba(205,127,50,0.1) !important;
+  }
+  .rarity-bronze .ach-label { color: #ffb870 !important; text-shadow: 0 0 10px #cd7f32 !important; }
+  .rarity-bronze .ach-icon { filter: drop-shadow(0 0 10px #cd7f32) !important; }
+  .rarity-bronze .ach-name { text-shadow: 0 0 8px #cd7f32 !important; }
+
+  .rarity-silver {
+    border-color: #dcdcdc !important;
+    box-shadow: 0 0 25px #c8c8c8, 0 0 60px rgba(220,220,220,0.6), inset 0 0 20px rgba(220,220,220,0.1) !important;
+  }
+  .rarity-silver .ach-label { color: #e8e8e8 !important; text-shadow: 0 0 10px #fff !important; }
+  .rarity-silver .ach-icon { filter: drop-shadow(0 0 10px #e8e8e8) !important; }
+  .rarity-silver .ach-name { text-shadow: 0 0 8px #fff !important; }
+
+  .rarity-gold {
+    border-color: #ffd700 !important;
+    box-shadow: 0 0 25px #ffd700, 0 0 60px rgba(255,215,0,0.7), inset 0 0 20px rgba(255,215,0,0.1) !important;
+  }
+  .rarity-gold .ach-label { color: #ffd700 !important; text-shadow: 0 0 10px #ffd700 !important; }
+  .rarity-gold .ach-icon { filter: drop-shadow(0 0 10px #ffd700) !important; }
+  .rarity-gold .ach-name { text-shadow: 0 0 8px #ffd700 !important; }
+
+  .achievement-popup .ach-icon {
+    font-size: 42px;
+    animation: achSpin 1s ease-out;
+  }
+  @keyframes achSpin {
+    0% { transform: rotate(-180deg) scale(0); }
+    60% { transform: rotate(20deg) scale(1.2); }
+    100% { transform: rotate(0deg) scale(1); }
+  }
+  .achievement-popup .ach-body { flex: 1; }
+  .achievement-popup .ach-label {
+    font-family: 'Arial Black', sans-serif;
+    font-weight: 900; font-size: 12px;
+    letter-spacing: 0.1em; text-transform: uppercase;
+  }
+  .achievement-popup .ach-name {
+    font-family: 'Arial Black', sans-serif;
+    font-size: 17px; font-weight: 900;
+    margin-top: 4px; color: #fff;
+  }
+  .achievement-popup .ach-desc {
+    font-family: 'Arial', sans-serif;
+    font-size: 12px; color: #ddd;
+    margin-top: 3px; line-height: 1.3;
   }
 
-  .haha:nth-child(3n+1) {
-    animation-delay: 0.3s;
-    color: #00ffff;
-    text-shadow: 0 0 8px #fff, 0 0 20px #00ffff, 0 0 40px #0080ff;
+  /* МЕНЮ */
+  .menu-panel {
+    position: fixed; inset: 0; z-index: 600;
+    display: flex; justify-content: center; align-items: center;
+    background: rgba(0, 0, 0, 0.85);
+    backdrop-filter: blur(10px);
+    opacity: 0; pointer-events: none;
+    transition: opacity 0.3s; padding: 20px;
+  }
+  .menu-panel.open { opacity: 1; pointer-events: auto; }
+
+  .menu-inner {
+    background: linear-gradient(135deg, #1a0033, #4b0082);
+    border: 3px solid #ffd700;
+    border-radius: 25px; padding: 0;
+    max-width: 780px; width: 100%; max-height: 88vh;
+    display: flex; flex-direction: column;
+    color: #fff;
+    box-shadow: 0 0 40px #ffd700, 0 0 80px rgba(255, 215, 0, 0.4);
+    overflow: hidden;
   }
 
-  .haha:nth-child(3n+2) {
-    animation-delay: 0.5s;
+  .menu-tabs {
+    display: flex;
+    border-bottom: 3px solid rgba(255, 215, 0, 0.25);
+    background: rgba(0, 0, 0, 0.3);
+    overflow-x: auto;
+  }
+  .menu-tab {
+    flex: 1; min-width: 100px;
+    padding: 16px 12px;
+    background: transparent; border: none;
+    color: #999;
+    font-family: inherit; font-size: 13px; font-weight: 900;
+    cursor: pointer; text-transform: uppercase;
+    letter-spacing: 0.03em;
+    transition: all 0.25s;
+    position: relative;
+    display: flex; align-items: center; justify-content: center;
+    gap: 6px; white-space: nowrap;
+  }
+  .menu-tab:hover { color: #fff; background: rgba(255, 255, 255, 0.05); }
+  .menu-tab.active {
+    color: #ffd700;
+    text-shadow: 0 0 12px #ffd700;
+    background: rgba(255, 215, 0, 0.08);
+  }
+  .menu-tab.active::after {
+    content: '';
+    position: absolute;
+    bottom: -3px; left: 0; right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, transparent, #ffd700, transparent);
+    box-shadow: 0 0 12px #ffd700;
+  }
+  .menu-tab .tab-badge {
+    background: rgba(255, 255, 255, 0.12);
+    padding: 2px 8px;
+    border-radius: 10px; font-size: 11px;
+    border: 1px solid rgba(255, 255, 255, 0.15);
+  }
+  .menu-tab.active .tab-badge {
+    background: rgba(255, 215, 0, 0.2);
+    border-color: rgba(255, 215, 0, 0.5);
+  }
+
+  .menu-tab.tab-bronze.active { color: #cd7f32; text-shadow: 0 0 12px #cd7f32; }
+  .menu-tab.tab-bronze.active .tab-badge { background: rgba(205,127,50,0.25); border-color: rgba(205,127,50,0.6); }
+  .menu-tab.tab-bronze.active::after { background: linear-gradient(90deg, transparent, #cd7f32, transparent); box-shadow: 0 0 12px #cd7f32; }
+  .menu-tab.tab-silver.active { color: #e0e0e0; text-shadow: 0 0 12px #fff; }
+  .menu-tab.tab-silver.active .tab-badge { background: rgba(200,200,200,0.25); border-color: rgba(200,200,200,0.6); }
+  .menu-tab.tab-silver.active::after { background: linear-gradient(90deg, transparent, #e0e0e0, transparent); box-shadow: 0 0 12px #e0e0e0; }
+  .menu-tab.tab-gold.active { color: #ffd700; text-shadow: 0 0 12px #ffd700; }
+  .menu-tab.tab-gold.active .tab-badge { background: rgba(255,215,0,0.25); border-color: rgba(255,215,0,0.6); }
+  .menu-tab.tab-gold.active::after { background: linear-gradient(90deg, transparent, #ffd700, transparent); box-shadow: 0 0 12px #ffd700; }
+
+  .menu-content { flex: 1; overflow-y: auto; padding: 20px 24px; }
+  .menu-pane { display: none; }
+  .menu-pane.active { display: block; }
+
+  .menu-section-title {
+    font-size: 16px;
+    color: #ffd700;
+    margin-bottom: 12px;
+    text-shadow: 0 0 10px rgba(255, 215, 0, 0.7);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    display: flex; align-items: center; gap: 10px;
+    flex-wrap: wrap;
+  }
+
+  .section-hint {
+    font-family: 'Arial', sans-serif;
+    font-size: 12px;
+    color: #ffe4ff;
+    font-weight: bold;
+    text-transform: none;
+    letter-spacing: 0;
+    background: rgba(255, 255, 255, 0.06);
+    padding: 3px 10px;
+    border-radius: 10px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+  }
+
+  /* Статистика */
+  .stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+    gap: 12px; margin-bottom: 24px;
+  }
+  .stat-card {
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 215, 0, 0.25);
+    border-radius: 12px; padding: 14px;
+    text-align: center; transition: all 0.25s;
+  }
+  .stat-card:hover {
+    background: rgba(255, 215, 0, 0.1);
+    border-color: rgba(255, 215, 0, 0.6);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(255, 215, 0, 0.2);
+  }
+  .stat-card .stat-icon { font-size: 24px; margin-bottom: 5px; }
+  .stat-card .stat-value { font-size: 22px; color: #ffff00; text-shadow: 0 0 10px #ff0; }
+  .stat-card .stat-label {
+    font-family: 'Arial', sans-serif;
+    font-size: 11px; color: #ffe4ff;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-top: 3px; font-weight: bold;
+  }
+
+  /* Строки достижений */
+  .item-row {
+    display: flex; align-items: center; gap: 14px;
+    padding: 12px 15px; margin-bottom: 10px;
+    border-radius: 14px;
+    background: rgba(255, 255, 255, 0.04);
+    border: 2px solid rgba(255, 255, 255, 0.1);
+    font-family: 'Arial', sans-serif;
+    font-size: 14px;
+    transition: all 0.3s;
+    position: relative;
+  }
+  .item-row.unlocked.rarity-bronze {
+    background: rgba(205,127,50,0.12);
+    border-color: rgba(205,127,50,0.7);
+    box-shadow: 0 0 15px rgba(205,127,50,0.3);
+  }
+  .item-row.unlocked.rarity-silver {
+    background: rgba(200,200,200,0.12);
+    border-color: rgba(220,220,220,0.7);
+    box-shadow: 0 0 15px rgba(220,220,220,0.35);
+  }
+  .item-row.unlocked.rarity-gold {
+    background: rgba(255,215,0,0.13);
+    border-color: rgba(255,215,0,0.75);
+    box-shadow: 0 0 20px rgba(255,215,0,0.4);
+    animation: goldRowGlow 2.5s ease-in-out infinite;
+  }
+  @keyframes goldRowGlow {
+    0%, 100% { box-shadow: 0 0 20px rgba(255,215,0,0.4); }
+    50% { box-shadow: 0 0 30px rgba(255,215,0,0.7), 0 0 50px rgba(255,215,0,0.35); }
+  }
+
+  .item-row.hidden-locked {
+    border-style: dashed;
+    border-color: rgba(255, 105, 180, 0.35);
+    background: rgba(0, 0, 0, 0.4);
+    position: relative;
+    overflow: hidden;
+  }
+  .item-row.hidden-locked::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: repeating-linear-gradient(
+      45deg,
+      transparent,
+      transparent 12px,
+      rgba(255, 105, 180, 0.04) 12px,
+      rgba(255, 105, 180, 0.04) 24px
+    );
+    pointer-events: none;
+  }
+
+  .item-row.hidden-locked .row-icon {
+    font-size: 26px;
+    min-width: 34px;
+    text-align: center;
+    filter: drop-shadow(0 0 8px #ff69b4);
+    animation: secretPulse 2s ease-in-out infinite;
+  }
+  @keyframes secretPulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.12); }
+  }
+
+  .item-row.visible-locked { opacity: 0.55; }
+
+  .item-row .row-icon {
+    font-size: 26px; min-width: 34px;
+    text-align: center;
+    filter: drop-shadow(0 0 6px currentColor);
+  }
+  .item-row .row-text { flex: 1; line-height: 1.4; position: relative; z-index: 1; }
+  .item-row .row-text b { color: #fff; font-size: 15px; }
+  .item-row.unlocked.rarity-bronze .row-text b { color: #ffb870; }
+  .item-row.unlocked.rarity-silver .row-text b { color: #f0f0f0; }
+  .item-row.unlocked.rarity-gold .row-text b { color: #ffd700; }
+  .item-row .row-text .desc {
+    font-size: 12.5px; color: #ccc;
+    margin-top: 2px; font-weight: normal;
+  }
+  .item-row.hidden-locked .row-text b {
+    color: #ff69b4 !important;
+    letter-spacing: 0.15em;
+    text-shadow: 0 0 10px #ff69b4;
+  }
+  .item-row.hidden-locked .row-text .desc {
+    color: #ff9ec8;
+    font-style: italic;
+  }
+
+  .item-row .row-side {
+    display: flex; flex-direction: column;
+    align-items: flex-end; gap: 6px;
+    position: relative; z-index: 1;
+  }
+
+  .rarity-badge {
+    display: inline-block;
+    font-size: 10px; padding: 2px 8px;
+    border-radius: 8px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    font-weight: 900;
+    white-space: nowrap;
+  }
+  .rarity-badge.bronze { color: #ffb870; background: rgba(205,127,50,0.2); border: 1px solid rgba(205,127,50,0.5); }
+  .rarity-badge.silver { color: #f0f0f0; background: rgba(200,200,200,0.2); border: 1px solid rgba(200,200,200,0.5); }
+  .rarity-badge.gold   { color: #ffd700; background: rgba(255,215,0,0.2); border: 1px solid rgba(255,215,0,0.6); }
+
+  .secret-badge {
+    display: inline-block;
+    font-size: 9px; padding: 2px 7px;
+    border-radius: 8px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    font-weight: 900;
     color: #ff69b4;
-    text-shadow: 0 0 8px #fff, 0 0 20px #ff1493, 0 0 40px #ff00ff;
+    background: rgba(255, 105, 180, 0.15);
+    border: 1px solid rgba(255, 105, 180, 0.4);
+    white-space: nowrap;
   }
 
-  .haha:hover {
-    transform: scale(1.3) rotate(5deg);
+  .unlocked-check {
+    font-size: 20px; color: #00ff88;
+    filter: drop-shadow(0 0 6px #00ff88);
+    animation: checkPop 0.5s ease-out;
+  }
+  @keyframes checkPop {
+    0% { transform: scale(0); }
+    60% { transform: scale(1.3); }
+    100% { transform: scale(1); }
   }
 
-  @keyframes bounce {
-    0%, 100% {
-      transform: translateY(0) scale(1);
+  .menu-footer {
+    padding: 14px 24px 20px;
+    display: flex; gap: 12px;
+    border-top: 2px solid rgba(255, 215, 0, 0.15);
+    background: rgba(0, 0, 0, 0.2);
+  }
+  .menu-btn {
+    flex: 1; padding: 13px 20px;
+    font-family: inherit; font-size: 15px; font-weight: 900;
+    border-radius: 50px; cursor: pointer;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    transition: all 0.2s;
+    border: 2px solid;
+  }
+  .menu-btn.primary {
+    background: linear-gradient(135deg, #ff1493, #ff8c00);
+    border-color: #fff; color: #fff;
+    box-shadow: 0 0 20px rgba(255, 20, 147, 0.5);
+  }
+  .menu-btn.primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 0 30px #ff1493, 0 0 60px #ff1493;
+  }
+  .menu-btn.danger {
+    background: transparent; border-color: #ff6b6b;
+    color: #ff6b6b; flex: 0 0 auto;
+    padding: 13px 18px; font-size: 13px;
+  }
+  .menu-btn.danger:hover {
+    background: #ff6b6b; color: #fff;
+    box-shadow: 0 0 20px #ff6b6b;
+  }
+
+  /* Overlay */
+  .overlay {
+    position: fixed; inset: 0; z-index: 500;
+    display: flex; flex-direction: column;
+    justify-content: center; align-items: center;
+    background: rgba(0, 0, 0, 0.75);
+    backdrop-filter: blur(8px);
+    color: #fff; text-align: center;
+    padding: 20px;
+    transition: opacity 0.5s ease;
+  }
+  .overlay.hidden { opacity: 0; pointer-events: none; }
+  .overlay h1 {
+    font-size: clamp(38px, 7vw, 80px);
+    margin-bottom: 15px;
+    text-shadow: 0 0 10px #fff, 0 0 30px #ff00ff, 0 0 60px #ff00ff, 0 0 90px #ff00ff;
+    animation: titleBounce 1.5s ease-in-out infinite;
+    cursor: pointer; user-select: none;
+  }
+  @keyframes titleBounce {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-10px); }
+  }
+  .overlay p {
+    font-size: clamp(15px, 2vw, 19px);
+    margin-bottom: 10px;
+    max-width: 680px; line-height: 1.5;
+    color: #ffe4ff;
+    font-family: 'Arial', sans-serif;
+    font-weight: bold;
+  }
+  .overlay .big-score {
+    font-size: clamp(50px, 10vw, 100px);
+    color: #ffff00;
+    text-shadow: 0 0 20px #ff0, 0 0 40px #f80, 0 0 60px #f00;
+    margin: 10px 0;
+    animation: scorePop 0.6s ease-out;
+  }
+  @keyframes scorePop {
+    0% { transform: scale(0.3); opacity: 0; }
+    60% { transform: scale(1.2); }
+    100% { transform: scale(1); opacity: 1; }
+  }
+  .btn {
+    display: inline-block;
+    padding: 16px 45px; margin-top: 18px;
+    font-family: inherit; font-size: 22px; font-weight: 900;
+    color: #fff;
+    background: linear-gradient(135deg, #ff1493, #ff8c00);
+    border: 3px solid #fff; border-radius: 50px;
+    cursor: pointer; text-transform: uppercase;
+    box-shadow: 0 0 20px #ff1493, 0 0 40px #ff1493, 0 8px 0 rgba(0,0,0,0.3);
+    transition: all 0.2s ease;
+  }
+  .btn:hover {
+    transform: translateY(-3px) scale(1.05);
+    box-shadow: 0 0 30px #ff1493, 0 0 60px #ff1493, 0 11px 0 rgba(0,0,0,0.3);
+  }
+  .btn:active {
+    transform: translateY(5px) scale(1);
+    box-shadow: 0 0 20px #ff1493, 0 0 40px #ff1493, 0 3px 0 rgba(0,0,0,0.3);
+  }
+
+  @media (max-width: 600px) {
+    .hud-item { padding: 6px 10px; font-size: 11px; min-width: 75px; }
+    .hud-item .value { font-size: 16px; }
+    .tile { font-size: 15px; padding: 9px 14px; border-width: 2px; }
+    .bottom-btn { font-size: 12px; padding: 9px 13px; }
+    .bottom-btn .mini-bar { width: 35px; }
+    .menu-inner { max-height: 92vh; }
+    .menu-content { padding: 16px 14px; }
+    .menu-tab { padding: 12px 6px; font-size: 10px; min-width: 70px; gap: 3px; flex-direction: column; }
+    .menu-tab .tab-badge { font-size: 9px; padding: 2px 6px; }
+    .menu-section-title { font-size: 13px; }
+    .stats-grid { grid-template-columns: repeat(2, 1fr); gap: 8px; }
+    .achievement-popup {
+      min-width: auto; max-width: calc(100vw - 30px);
+      top: auto; bottom: 15px; right: -110vw;
     }
-    50% {
-      transform: translateY(-12px) scale(1.08);
-    }
-  }
-
-  /* Летящие смайлики */
-  .emoji {
-    position: fixed;
-    pointer-events: none;
-    z-index: 2;
-    animation: fly linear infinite;
-    opacity: 0.85;
-  }
-
-  @keyframes fly {
-    0% {
-      transform: translate(-15vw, 0) rotate(0deg);
-      opacity: 0;
-    }
-    10% { opacity: 1; }
-    90% { opacity: 1; }
-    100% {
-      transform: translate(115vw, -20vh) rotate(720deg);
-      opacity: 0;
-    }
-  }
-
-  /* Взрыв смайликов при клике */
-  .popup-emoji {
-    position: fixed;
-    pointer-events: none;
-    z-index: 9999;
-    transition: all 1.4s cubic-bezier(0.2, 0.9, 0.4, 1);
-    font-size: 32px;
+    .achievement-popup.show { right: 15px; }
   }
 </style>
 </head>
 <body>
 
-  <div class="haha-container" id="container"></div>
+  <div class="hud">
+    <div class="hud-item">ПАРЫ<br><span class="value" id="pairs">0 / 8</span></div>
+    <div class="hud-item">ХОДЫ<br><span class="value" id="moves">0</span></div>
+    <div class="hud-item">ВРЕМЯ<br><span class="value" id="time">0:00</span></div>
+  </div>
 
-  <script>
-    // ============ Генерация "Хахах" МНОГО РАЗ ============
-    const container = document.getElementById('container');
-    const TOTAL = 120; // сколько раз повторяем
+  <div id="game-area"></div>
 
-    // Варианты для разнообразия
-    const variants = ['Хахах', 'Ха-хах', 'Хахаха', 'ХАХАХ'];
+  <button class="bottom-btn" id="menu-btn">
+    <span>🏆</span>
+    <span id="menu-text">0 / 24</span>
+    <div class="mini-bar"><div id="menu-bar" style="width:0%"></div></div>
+  </button>
 
-    for (let i = 0; i < TOTAL; i++) {
-      const span = document.createElement('span');
-      span.className = 'haha';
-      span.textContent = variants[i % variants.length];
-      // Случайная задержка, чтобы не двигались синхронно
-      span.style.animationDelay = (Math.random() * 1.5) + 's';
-      // Случайный лёгкий наклон
-      span.style.transform = `rotate(${(Math.random() - 0.5) * 8}deg)`;
-      container.appendChild(span);
-    }
+  <button class="bottom-btn" id="shuffle-btn">🔄 Перемешать</button>
 
-    // ============ Пузыри на фоне ============
-    for (let i = 0; i < 30; i++) {
-      const b = document.createElement('div');
-      b.className = 'bubble';
-      const size = Math.random() * 120 + 30;
-      b.style.width = size + 'px';
-      b.style.height = size + 'px';
-      b.style.left = Math.random() * 100 + '%';
-      b.style.animationDuration = (Math.random() * 12 + 10) + 's';
-      b.style.animationDelay = (Math.random() * 12) + 's';
-      document.body.appendChild(b);
-    }
+  <div class="menu-panel" id="menu-panel">
+    <div class="menu-inner">
+      <div class="menu-tabs">
+        <button class="menu-tab active" data-tab="stats">📊 Статистика</button>
+        <button class="menu-tab tab-bronze" data-tab="bronze">🥉 Бронза <span class="tab-badge" id="bronze-badge">0 / 0</span></button>
+        <button class="menu-tab tab-silver" data-tab="silver">🥈 Серебро <span class="tab-badge" id="silver-badge">0 / 0</span></button>
+        <button class="menu-tab tab-gold" data-tab="gold">🥇 Золото <span class="tab-badge" id="gold-badge">0 / 0</span></button>
+      </div>
 
-    // ============ Летящие смайлики ============
-    const emojis = ['😂', '🤣', '😆', '😹', '😄', '😁', '🤪', '😝', '😛'];
-    for (let i = 0; i < 18; i++) {
-      const e = document.createElement('div');
-      e.className = 'emoji';
-      e.textContent = emojis[Math.floor(Math.random() * emojis.length)];
-      e.style.top = Math.random() * 100 + '%';
-      e.style.left = '-15vw';
-      e.style.fontSize = (Math.random() * 35 + 25) + 'px';
-      e.style.animationDuration = (Math.random() * 7 + 6) + 's';
-      e.style.animationDelay = (Math.random() * 10) + 's';
-      document.body.appendChild(e);
-    }
+      <div class="menu-content">
+        <div class="menu-pane active" id="pane-stats">
+          <div class="menu-section-title">📊 Общая статистика</div>
+          <div class="stats-grid" id="stats-grid"></div>
+          <div class="menu-section-title" style="margin-top:22px;">⚡ Лучшие результаты</div>
+          <div class="stats-grid" id="stats-best-grid"></div>
+          <div class="menu-section-title" style="margin-top:22px;">🏅 Прогресс по редкостям</div>
+          <div class="stats-grid" id="stats-rarity-grid"></div>
+        </div>
 
-    // ============ Взрыв смайликов при клике ============
-    document.addEventListener('click', (ev) => {
-      for (let i = 0; i < 12; i++) {
-        const e = document.createElement('div');
-        e.className = 'popup-emoji';
-        e.textContent = emojis[Math.floor(Math.random() * emojis.length)];
-        e.style.left = ev.clientX + 'px';
-        e.style.top = ev.clientY + 'px';
-        document.body.appendChild(e);
-        requestAnimationFrame(() => {
-          e.style.transform = `translate(${(Math.random() - 0.5) * 700}px, ${(Math.random() - 0.5) * 700}px) rotate(${Math.random() * 720}deg)`;
-          e.style.opacity = '0';
-        });
-        setTimeout(() => e.remove(), 1500);
+        <div class="menu-pane" id="pane-bronze">
+          <div class="menu-section-title">
+            🥉 Бронза <span style="font-size:12px;color:#ffb870;">— легко</span>
+            <span class="section-hint" id="hint-bronze"></span>
+          </div>
+          <div id="list-bronze"></div>
+        </div>
+
+        <div class="menu-pane" id="pane-silver">
+          <div class="menu-section-title">
+            🥈 Серебро <span style="font-size:12px;color:#e0e0e0;">— нормально</span>
+            <span class="section-hint" id="hint-silver"></span>
+          </div>
+          <div id="list-silver"></div>
+        </div>
+
+        <div class="menu-pane" id="pane-gold">
+          <div class="menu-section-title">
+            🥇 Золото <span style="font-size:12px;color:#ffd700;">— сложно</span>
+            <span class="section-hint" id="hint-gold"></span>
+          </div>
+          <div id="list-gold"></div>
+        </div>
+      </div>
+
+      <div class="menu-footer">
+        <button class="menu-btn primary" id="close-menu">Продолжить игру</button>
+        <button class="menu-btn danger" id="reset-progress">🗑 Сброс</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="overlay" id="start-screen">
+    <h1 id="title">ХАХАХА</h1>
+    <p>Найди <b>все пары одинаковых «Хахах»</b>!</p>
+    <p>🎯 Плитки лежат кучей — одна закрывает другую.</p>
+    <p>✨ Достать можно только <b>верхнюю</b>!</p>
+    <p style="color:#ffd700; margin-top:8px;">
+      🥉 8 бронзовых · 🥈 8 серебряных · 🥇 8 золотых
+    </p>
+    <p style="color:#ff69b4; margin-top:5px; font-size:16px;">
+      🤫 Скрытые достижения видны в списке, но их название и условие — тайна!
+    </p>
+    <button class="btn" id="start-btn">Играть 🎮</button>
+  </div>
+
+  <div class="overlay hidden" id="end-screen">
+    <h1>🎉 ПОБЕДА!</h1>
+    <p>Ты разобрал все пары «Хахах»!</p>
+    <p style="margin-top:15px; font-size:20px;">Ходов сделано:</p>
+    <div class="big-score" id="final-moves">0</div>
+    <p id="time-result"></p>
+    <p id="rank" style="color:#ffd700; font-size:20px; margin-top:10px;"></p>
+    <button class="btn" id="restart-btn">Ещё раз 🔄</button>
+  </div>
+
+<script>
+  // ==================================================
+  // ПУЗЫРИ
+  // ==================================================
+  for (let i = 0; i < 25; i++) {
+    const b = document.createElement('div');
+    b.className = 'bubble';
+    const size = Math.random() * 100 + 30;
+    b.style.width = size + 'px';
+    b.style.height = size + 'px';
+    b.style.left = Math.random() * 100 + '%';
+    b.style.animationDuration = (Math.random() * 12 + 10) + 's';
+    b.style.animationDelay = (Math.random() * 12) + 's';
+    document.body.appendChild(b);
+  }
+
+  // ==================================================
+  // ЭЛЕМЕНТЫ
+  // ==================================================
+  const gameArea = document.getElementById('game-area');
+  const pairsEl = document.getElementById('pairs');
+  const movesEl = document.getElementById('moves');
+  const timeEl = document.getElementById('time');
+  const startScreen = document.getElementById('start-screen');
+  const endScreen = document.getElementById('end-screen');
+  const finalMovesEl = document.getElementById('final-moves');
+  const timeResultEl = document.getElementById('time-result');
+  const rankEl = document.getElementById('rank');
+  const titleEl = document.getElementById('title');
+  const shuffleBtn = document.getElementById('shuffle-btn');
+  const menuBtn = document.getElementById('menu-btn');
+  const menuPanel = document.getElementById('menu-panel');
+  const menuText = document.getElementById('menu-text');
+  const menuBar = document.getElementById('menu-bar');
+  const statsGrid = document.getElementById('stats-grid');
+  const statsBestGrid = document.getElementById('stats-best-grid');
+  const statsRarityGrid = document.getElementById('stats-rarity-grid');
+
+  const VARIANTS = ['Хахах', 'ХАХАХ', 'Ха-хах', 'Хахаха', 'Ахаха', 'Хаханьки', 'Хихих', 'Хо-хо-хо'];
+
+  let tiles = [];
+  let selectedTile = null;
+  let pairsFound = 0;
+  let moves = 0;
+  let totalPairs = 0;
+  let playing = false;
+  let startTime = 0;
+  let timeInterval = null;
+  let rainbowMode = false;
+  let wrongAttempts = 0;
+  let currentWinStreak = 0;
+
+  // ==================================================
+  // РЕДКОСТИ
+  // ==================================================
+  const RARITY = {
+    bronze: { name: 'Бронза', icon: '🥉', label: 'легко', color: '#ffb870' },
+    silver: { name: 'Серебро', icon: '🥈', label: 'нормально', color: '#f0f0f0' },
+    gold:   { name: 'Золото',  icon: '🥇', label: 'сложно', color: '#ffd700' }
+  };
+
+  // ==================================================
+  // СТАТИСТИКА
+  // ==================================================
+  const STATS_KEY = 'haha_stats_v3';
+  const ACH_KEY = 'haha_achievements_v3';
+
+  const defaultStats = {
+    gamesPlayed: 0, gamesWon: 0,
+    totalPairsFound: 0, totalMoves: 0,
+    bestPairsInGame: 0, bestTime: 0, bestMoves: 0,
+    perfectGamesNoMistakes: 0,
+    rainbowActivated: false, wordUsed: false,
+    titleClicks: 0, shufflesUsed: 0,
+    maxWinStreak: 0, gamesWonWithComeback: 0,
+    maxDistinctVariants: 0
+  };
+  let stats = { ...defaultStats };
+
+  try {
+    const s = JSON.parse(localStorage.getItem(STATS_KEY) || 'null');
+    if (s) stats = { ...defaultStats, ...s };
+  } catch(e) {}
+
+  function saveStats() {
+    try { localStorage.setItem(STATS_KEY, JSON.stringify(stats)); } catch(e) {}
+  }
+
+  let unlockedAch = new Set();
+  try {
+    const a = JSON.parse(localStorage.getItem(ACH_KEY) || '[]');
+    a.forEach(id => unlockedAch.add(id));
+  } catch(e) {}
+
+  function saveAch() {
+    try { localStorage.setItem(ACH_KEY, JSON.stringify([...unlockedAch])); } catch(e) {}
+  }
+
+  // ==================================================
+  // ДОСТИЖЕНИЯ
+  // ==================================================
+  const ACHIEVEMENTS = [
+    // 🥉 БРОНЗА (легко)
+    { id: 'first_game',  rarity: 'bronze', hidden: false, icon: '🎮', name: 'Первая игра',     desc: 'Начни первую игру',                   check: s => s.gamesPlayed >= 1 },
+    { id: 'first_pair',  rarity: 'bronze', hidden: false, icon: '🥇', name: 'Первая пара',     desc: 'Найди первую пару',                   check: s => s.totalPairsFound >= 1 },
+    { id: 'half_way',    rarity: 'bronze', hidden: false, icon: '💯', name: 'Половина пути',   desc: 'Найди 4 пары за одну игру',           check: s => s.bestPairsInGame >= 4 },
+    { id: 'winner',      rarity: 'bronze', hidden: false, icon: '🏆', name: 'Победитель',      desc: 'Пройди игру до конца',                check: s => s.gamesWon >= 1 },
+    { id: 'shuffler',    rarity: 'bronze', hidden: false, icon: '🔄', name: 'Перемешивальщик', desc: 'Используй перемешивание 5 раз',       check: s => s.shufflesUsed >= 5 },
+    { id: 'laugh_king',  rarity: 'bronze', hidden: false, icon: '😂', name: 'Смехун',          desc: 'Найди 50 пар за всё время',           check: s => s.totalPairsFound >= 50 },
+    { id: 'title_secret',rarity: 'bronze', hidden: true,  icon: '🖱️', name: 'Терпеливый',      desc: 'Кликни 7 раз по заголовку «ХАХАХА»',  check: s => s.titleClicks >= 7 },
+    { id: 'word_secret', rarity: 'bronze', hidden: true,  icon: '💬', name: 'Слово силы',      desc: 'Набери на клавиатуре «хахаха»',       check: s => s.wordUsed === true },
+
+    // 🥈 СЕРЕБРО (нормально)
+    { id: 'under_60',    rarity: 'silver', hidden: false, icon: '🔥', name: 'Скорохват',       desc: 'Пройди игру за 60 секунд',            check: s => s.bestTime > 0 && s.bestTime <= 60 },
+    { id: 'fast_hands',  rarity: 'silver', hidden: false, icon: '🏃', name: 'Быстрые руки',    desc: 'Пройди игру за 40 секунд',            check: s => s.bestTime > 0 && s.bestTime <= 40 },
+    { id: 'veteran',     rarity: 'silver', hidden: false, icon: '🎖️', name: 'Ветеран',         desc: 'Сыграй 10 игр',                       check: s => s.gamesPlayed >= 10 },
+    { id: 'master',      rarity: 'silver', hidden: false, icon: '🌟', name: 'Мастер ХАХАХА',   desc: 'Выиграй 5 игр',                       check: s => s.gamesWon >= 5 },
+    { id: 'marathon',    rarity: 'silver', hidden: false, icon: '⏱️', name: 'Марафонец',       desc: 'Найди 100 пар за всё время',          check: s => s.totalPairsFound >= 100 },
+    { id: 'clicker',     rarity: 'silver', hidden: false, icon: '👆', name: 'Кликер',          desc: 'Сделай 500 ходов за всё время',       check: s => s.totalMoves >= 500 },
+    { id: 'konami',      rarity: 'silver', hidden: true,  icon: '🌈', name: 'Радужный режим',  desc: 'Введи код Konami: ↑↑↓↓←→←→BA',       check: s => s.rainbowActivated === true },
+    { id: 'combo_master',rarity: 'silver', hidden: true,  icon: '⚡', name: 'В ударе',         desc: 'Найди 5 пар подряд без ошибок',       check: s => s.maxWinStreak >= 5 },
+
+    // 🥇 ЗОЛОТО (сложно)
+    { id: 'legend',       rarity: 'gold', hidden: false, icon: '💫', name: 'Легенда',          desc: 'Выиграй 15 игр',                    check: s => s.gamesWon >= 15 },
+    { id: 'no_mistakes',  rarity: 'gold', hidden: false, icon: '🧠', name: 'Безупречно',       desc: 'Пройди игру без единой ошибки',     check: s => s.perfectGamesNoMistakes >= 1 },
+    { id: 'speed_light',  rarity: 'gold', hidden: false, icon: '⚡', name: 'Скорость света',   desc: 'Пройди игру за 30 секунд',          check: s => s.bestTime > 0 && s.bestTime <= 30 },
+    { id: 'perfect_run',  rarity: 'gold', hidden: false, icon: '👑', name: 'Идеальный разбор', desc: 'Пройди игру ровно за 8 ходов',      check: s => s.bestMoves === 8 },
+    { id: 'hunter',       rarity: 'gold', hidden: true,  icon: '🕵️', name: 'Секретоискатель',  desc: 'Найди 3 скрытых достижения',        check: s => countHiddenUnlocked() >= 3 },
+    { id: 'knowall',      rarity: 'gold', hidden: true,  icon: '🔐', name: 'Всезнайка',        desc: 'Найди все скрытые достижения',      check: s => countHiddenUnlocked() >= HIDDEN_TOTAL },
+    { id: 'comeback',     rarity: 'gold', hidden: true,  icon: '💪', name: 'Камбэк',           desc: 'Пройди игру с 5+ ошибками и победи',check: s => s.gamesWonWithComeback >= 1 },
+    { id: 'perfectionist',rarity: 'gold', hidden: true,  icon: '💎', name: 'Совершенство',     desc: 'Пройди без ошибок 3 раза',          check: s => s.perfectGamesNoMistakes >= 3 }
+  ];
+
+  const HIDDEN_TOTAL = ACHIEVEMENTS.filter(a => a.hidden).length;
+
+  function countHiddenUnlocked() {
+    return ACHIEVEMENTS.filter(a => a.hidden && unlockedAch.has(a.id)).length;
+  }
+
+  // ==================================================
+  // СЧЁТЧИКИ
+  // ==================================================
+  function updateCounters() {
+    const total = ACHIEVEMENTS.length;
+    const unlockedAll = unlockedAch.size;
+
+    const byRarity = { bronze: [0, 0, 0, 0], silver: [0, 0, 0, 0], gold: [0, 0, 0, 0] };
+    // [unlocked, total, hiddenUnlocked, hiddenTotal]
+    ACHIEVEMENTS.forEach(a => {
+      byRarity[a.rarity][1]++;
+      if (unlockedAch.has(a.id)) byRarity[a.rarity][0]++;
+      if (a.hidden) {
+        byRarity[a.rarity][3]++;
+        if (unlockedAch.has(a.id)) byRarity[a.rarity][2]++;
       }
     });
-  </script>
+
+    menuText.textContent = `${unlockedAll} / ${total}`;
+    menuBar.style.width = (unlockedAll / total * 100) + '%';
+
+    document.getElementById('bronze-badge').textContent = `${byRarity.bronze[0]} / ${byRarity.bronze[1]}`;
+    document.getElementById('silver-badge').textContent = `${byRarity.silver[0]} / ${byRarity.silver[1]}`;
+    document.getElementById('gold-badge').textContent = `${byRarity.gold[0]} / ${byRarity.gold[1]}`;
+
+    // Подсказки-счётчики по скрытым
+    document.getElementById('hint-bronze').textContent = `🔮 Скрытых: ${byRarity.bronze[2]} / ${byRarity.bronze[3]}`;
+    document.getElementById('hint-silver').textContent = `🔮 Скрытых: ${byRarity.silver[2]} / ${byRarity.silver[3]}`;
+    document.getElementById('hint-gold').textContent   = `🔮 Скрытых: ${byRarity.gold[2]} / ${byRarity.gold[3]}`;
+
+    if (byRarity.gold[0] === byRarity.gold[1]) {
+      document.getElementById('gold-badge').style.background = 'rgba(255, 215, 0, 0.35)';
+      document.getElementById('gold-badge').style.borderColor = 'rgba(255, 215, 0, 0.8)';
+    } else {
+      document.getElementById('gold-badge').style.background = '';
+      document.getElementById('gold-badge').style.borderColor = '';
+    }
+  }
+
+  // ==================================================
+  // РЕНДЕР МЕНЮ
+  // ==================================================
+  function renderStats() {
+    const mainStats = [
+      { icon: '🎮', value: stats.gamesPlayed, label: 'Сыграно' },
+      { icon: '🏆', value: stats.gamesWon, label: 'Побед' },
+      { icon: '😂', value: stats.totalPairsFound, label: 'Пар найдено' },
+      { icon: '👆', value: stats.totalMoves, label: 'Ходов' },
+      { icon: '🔥', value: stats.maxWinStreak, label: 'Лучшая серия' },
+      { icon: '🔄', value: stats.shufflesUsed, label: 'Перемешано' }
+    ];
+    statsGrid.innerHTML = mainStats.map(s => `
+      <div class="stat-card">
+        <div class="stat-icon">${s.icon}</div>
+        <div class="stat-value">${s.value}</div>
+        <div class="stat-label">${s.label}</div>
+      </div>
+    `).join('');
+
+    const bestStats = [
+      { icon: '⏱️', value: stats.bestTime > 0 ? stats.bestTime + 'с' : '—', label: 'Лучшее время' },
+      { icon: '👑', value: stats.bestMoves > 0 ? stats.bestMoves : '—', label: 'Лучшие ходы' },
+      { icon: '🧠', value: stats.perfectGamesNoMistakes, label: 'Без ошибок' },
+      { icon: '💪', value: stats.gamesWonWithComeback, label: 'Камбэков' }
+    ];
+    statsBestGrid.innerHTML = bestStats.map(s => `
+      <div class="stat-card">
+        <div class="stat-icon">${s.icon}</div>
+        <div class="stat-value">${s.value}</div>
+        <div class="stat-label">${s.label}</div>
+      </div>
+    `).join('');
+
+    const rarityStats = ['bronze', 'silver', 'gold'].map(r => {
+      const list = ACHIEVEMENTS.filter(a => a.rarity === r);
+      const unlocked = list.filter(a => unlockedAch.has(a.id)).length;
+      const hidden = list.filter(a => a.hidden).length;
+      const hiddenUnlocked = list.filter(a => a.hidden && unlockedAch.has(a.id)).length;
+      return {
+        icon: RARITY[r].icon,
+        value: unlocked + ' / ' + list.length,
+        label: RARITY[r].name + ' · 🔮 ' + hiddenUnlocked + '/' + hidden
+      };
+    });
+    statsRarityGrid.innerHTML = rarityStats.map(s => `
+      <div class="stat-card">
+        <div class="stat-icon">${s.icon}</div>
+        <div class="stat-value">${s.value}</div>
+        <div class="stat-label">${s.label}</div>
+      </div>
+    `).join('');
+  }
+
+  function renderItemRow(a, secretIndex) {
+    const u = unlockedAch.has(a.id);
+    const r = RARITY[a.rarity];
+
+    // ============= СКРЫТОЕ И НЕ НАЙДЕНО =============
+    // Показываем строчку, но без названия и условия
+    if (a.hidden && !u) {
+      return `<div class="item-row hidden-locked">
+        <div class="row-icon" style="color:#ff69b4">🎁</div>
+        <div class="row-text">
+          <b>??? #${secretIndex}</b>
+          <div class="desc">🔒 Условие: <b style="color:#ff9ec8">???</b> — разблокируй, чтобы узнать!</div>
+        </div>
+        <div class="row-side">
+          <span class="rarity-badge ${a.rarity}">${r.icon} ${r.name}</span>
+          <span class="secret-badge">🔮 Секрет</span>
+        </div>
+      </div>`;
+    }
+
+    // ============= ВИДИМОЕ И НЕ НАЙДЕНО =============
+    if (!u) {
+      return `<div class="item-row visible-locked">
+        <div class="row-icon" style="color:#666">🔒</div>
+        <div class="row-text">
+          <b style="color:#aaa !important">${a.name}</b>
+          <div class="desc">${a.desc}</div>
+        </div>
+        <div class="row-side">
+          <span class="rarity-badge ${a.rarity}">${r.icon} ${r.name}</span>
+        </div>
+      </div>`;
+    }
+
+    // ============= ОТКРЫТО =============
+    return `<div class="item-row unlocked rarity-${a.rarity}">
+      <div class="row-icon" style="color:${r.color}">${a.icon}</div>
+      <div class="row-text">
+        <b>${a.name}</b>
+        <div class="desc">${a.desc}</div>
+      </div>
+      <div class="row-side">
+        <span class="rarity-badge ${a.rarity}">${r.icon} ${r.name}</span>
+        ${a.hidden ? '<span class="secret-badge">🔮 Секрет</span>' : ''}
+        <span class="unlocked-check">✓</span>
+      </div>
+    </div>`;
+  }
+
+  function renderRarityList(rarity) {
+    const list = ACHIEVEMENTS.filter(a => a.rarity === rarity);
+
+    // Сортировка: сначала открытые (видимые и скрытые), потом видимые закрытые, потом скрытые закрытые
+    list.sort((a, b) => {
+      const ua = unlockedAch.has(a.id) ? 0 : 1;
+      const ub = unlockedAch.has(b.id) ? 0 : 1;
+      if (ua !== ub) return ua - ub;
+      // закрытые: видимые раньше скрытых
+      const ha = a.hidden ? 1 : 0;
+      const hb = b.hidden ? 1 : 0;
+      return ha - hb;
+    });
+
+    // Считаем номер для скрытых-закрытых (для стабильного "??? #N")
+    let secretCounter = 0;
+    const html = list.map(a => {
+      if (a.hidden && !unlockedAch.has(a.id)) {
+        secretCounter++;
+        return renderItemRow(a, secretCounter);
+      }
+      return renderItemRow(a);
+    }).join('');
+
+    document.getElementById('list-' + rarity).innerHTML = html;
+  }
+
+  function renderAllLists() {
+    ['bronze', 'silver', 'gold'].forEach(renderRarityList);
+  }
+
+  // ==================================================
+  // POPUP
+  // ==================================================
+  const achQueue = [];
+  let achShowing = false;
+
+  function queueAchievement(ach) {
+    achQueue.push(ach);
+    if (!achShowing) showNextAch();
+  }
+
+  function showNextAch() {
+    if (achQueue.length === 0) { achShowing = false; return; }
+    achShowing = true;
+    const ach = achQueue.shift();
+    const r = RARITY[ach.rarity];
+    const el = document.createElement('div');
+    el.className = 'achievement-popup rarity-' + ach.rarity;
+    el.innerHTML = `
+      <div class="ach-icon">${ach.icon}</div>
+      <div class="ach-body">
+        <div class="ach-label">${ach.hidden ? '🔮 Секрет раскрыт!' : '🏆 Достижение!'} ${r.icon} ${r.name.toUpperCase()}</div>
+        <div class="ach-name">${ach.name}</div>
+        <div class="ach-desc">${ach.desc}</div>
+      </div>
+    `;
+    document.body.appendChild(el);
+    requestAnimationFrame(() => el.classList.add('show'));
+
+    const count = ach.rarity === 'gold' ? 24 : ach.rarity === 'silver' ? 16 : 10;
+    burstEmojis(window.innerWidth - 200, 140, count);
+
+    setTimeout(() => {
+      el.classList.remove('show');
+      setTimeout(() => { el.remove(); showNextAch(); }, 550);
+    }, 3000);
+  }
+
+  function checkAchievements() {
+    let anyNew = true;
+    while (anyNew) {
+      anyNew = false;
+      ACHIEVEMENTS.forEach(a => {
+        if (!unlockedAch.has(a.id) && a.check(stats)) {
+          unlockedAch.add(a.id);
+          anyNew = true;
+          queueAchievement(a);
+        }
+      });
+    }
+    saveAch();
+    saveStats();
+    updateCounters();
+    if (menuPanel.classList.contains('open')) {
+      renderStats();
+      renderAllLists();
+    }
+  }
+
+  // ==================================================
+  // ТОСТ
+  // ==================================================
+  let toastEl = null, toastTimer = null;
+  function showToast(text) {
+    if (!toastEl) {
+      toastEl = document.createElement('div');
+      toastEl.className = 'toast';
+      document.body.appendChild(toastEl);
+    }
+    toastEl.textContent = text;
+    toastEl.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => toastEl.classList.remove('show'), 3200);
+  }
+
+  // ==================================================
+  // УТИЛИТЫ
+  // ==================================================
+  function shuffle(arr) {
+    for (let i = arr.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [arr[i], arr[j]] = [arr[j], arr[i]];
+    }
+    return arr;
+  }
+
+  function burstEmojis(x, y, count) {
+    const emojis = ['😂','🤣','😆','😹','😄','😁','🤪','🎉','✨','⭐','🥉','🥈','🥇'];
+    for (let i = 0; i < count; i++) {
+      const e = document.createElement('div');
+      e.textContent = emojis[Math.floor(Math.random() * emojis.length)];
+      e.style.position = 'fixed';
+      e.style.left = x + 'px';
+      e.style.top = y + 'px';
+      e.style.fontSize = (Math.random() * 20 + 22) + 'px';
+      e.style.pointerEvents = 'none';
+      e.style.zIndex = 9999;
+      e.style.transition = 'all 1s cubic-bezier(0.2, 0.9, 0.4, 1)';
+      document.body.appendChild(e);
+      requestAnimationFrame(() => {
+        e.style.transform = `translate(${(Math.random()-0.5)*500}px, ${(Math.random()-0.5)*500}px) rotate(${Math.random()*720}deg)`;
+        e.style.opacity = '0';
+      });
+      setTimeout(() => e.remove(), 1100);
+    }
+  }
+
+  // ==================================================
+  // ПОЛЕ
+  // ==================================================
+  function buildBoard() {
+    gameArea.innerHTML = '';
+    tiles = [];
+    selectedTile = null;
+    pairsFound = 0;
+    moves = 0;
+    wrongAttempts = 0;
+    currentWinStreak = 0;
+    totalPairs = VARIANTS.length;
+    pairsEl.textContent = `0 / ${totalPairs}`;
+    movesEl.textContent = '0';
+
+    const values = [];
+    VARIANTS.forEach(v => values.push(v, v));
+    shuffle(values);
+
+    const boardW = window.innerWidth;
+    const boardH = window.innerHeight;
+    const numClusters = 4;
+    const centers = [];
+    for (let i = 0; i < numClusters; i++) {
+      centers.push({
+        x: 130 + Math.random() * Math.max(boardW - 260, 100),
+        y: 120 + Math.random() * Math.max(boardH - 300, 100)
+      });
+    }
+
+    const zs = [];
+    for (let i = 1; i <= values.length; i++) zs.push(i);
+    shuffle(zs);
+
+    for (let i = 0; i < values.length; i++) {
+      const c = centers[i % numClusters];
+      const angle = Math.random() * Math.PI * 2;
+      const radius = Math.random() * 75;
+      const x = c.x + Math.cos(angle) * radius;
+      const y = c.y + Math.sin(angle) * radius;
+      tiles.push({
+        id: i, value: values[i], x, y, z: zs[i],
+        removed: false, blocked: false, selected: false, matched: false
+      });
+    }
+
+    tiles.forEach(t => {
+      const el = document.createElement('div');
+      el.className = 'tile';
+      el.id = 'tile-' + t.id;
+      el.textContent = t.value;
+      el.style.left = t.x + 'px';
+      el.style.top = t.y + 'px';
+      el.style.zIndex = t.z;
+      el.addEventListener('click', (e) => { e.stopPropagation(); onTileClick(t); });
+      gameArea.appendChild(el);
+    });
+
+    requestAnimationFrame(() => updateAccessibility());
+  }
+
+  function updateAccessibility() {
+    const rects = new Map();
+    tiles.forEach(t => {
+      if (t.removed) return;
+      const el = document.getElementById('tile-' + t.id);
+      if (!el) return;
+      rects.set(t.id, el.getBoundingClientRect());
+    });
+
+    tiles.forEach(t => {
+      if (t.removed) return;
+      const el = document.getElementById('tile-' + t.id);
+      if (!el) return;
+
+      if (t === selectedTile) {
+        t.blocked = false;
+        el.classList.toggle('blocked', false);
+        el.classList.toggle('selected', true);
+        return;
+      }
+
+      const r = rects.get(t.id);
+      if (!r) return;
+      const cx = r.left + r.width / 2;
+      const cy = r.top + r.height / 2;
+
+      let blocked = false;
+      for (const other of tiles) {
+        if (other === t || other.removed || other === selectedTile) continue;
+        if (other.z <= t.z) continue;
+        const r2 = rects.get(other.id);
+        if (!r2) continue;
+        if (cx >= r2.left && cx <= r2.right && cy >= r2.top && cy <= r2.bottom) {
+          blocked = true; break;
+        }
+      }
+
+      t.blocked = blocked;
+      el.classList.toggle('blocked', blocked);
+      el.classList.toggle('selected', false);
+    });
+  }
+
+  // ==================================================
+  // КЛИК ПО ПЛИТКЕ
+  // ==================================================
+  function onTileClick(tile) {
+    if (!playing) return;
+    if (tile.removed || tile.matched) return;
+    if (tile.blocked && tile !== selectedTile) return;
+
+    if (tile === selectedTile) {
+      tile.selected = false;
+      selectedTile = null;
+      updateAccessibility();
+      return;
+    }
+
+    if (!selectedTile) {
+      selectedTile = tile;
+      tile.selected = true;
+      updateAccessibility();
+      return;
+    }
+
+    const first = selectedTile;
+
+    if (first.value === tile.value) {
+      moves++;
+      pairsFound++;
+      first.selected = false;
+      first.matched = true;
+      first.removed = true;
+      tile.matched = true;
+      tile.removed = true;
+      selectedTile = null;
+
+      const el1 = document.getElementById('tile-' + first.id);
+      const el2 = document.getElementById('tile-' + tile.id);
+      if (el1) { el1.classList.remove('selected'); el1.classList.add('matched'); }
+      if (el2) { el2.classList.add('matched'); }
+
+      const r = el2 ? el2.getBoundingClientRect() : { left: tile.x, top: tile.y, width: 0, height: 0 };
+      burstEmojis(r.left + r.width / 2, r.top + r.height / 2, 8);
+
+      pairsEl.textContent = `${pairsFound} / ${totalPairs}`;
+      movesEl.textContent = moves;
+
+      stats.totalPairsFound++;
+      if (pairsFound > stats.bestPairsInGame) stats.bestPairsInGame = pairsFound;
+
+      currentWinStreak++;
+      if (currentWinStreak > stats.maxWinStreak) stats.maxWinStreak = currentWinStreak;
+
+      const distinctFound = new Set(tiles.filter(x => x.removed).map(x => x.value)).size;
+      if (distinctFound > stats.maxDistinctVariants) stats.maxDistinctVariants = distinctFound;
+
+      saveStats();
+
+      setTimeout(() => {
+        if (el1) el1.remove();
+        if (el2) el2.remove();
+        updateAccessibility();
+        checkWin();
+        checkAchievements();
+      }, 500);
+    } else {
+      moves++;
+      wrongAttempts++;
+      currentWinStreak = 0;
+      movesEl.textContent = moves;
+      stats.totalMoves++;
+      saveStats();
+
+      first.selected = false;
+      const el1 = document.getElementById('tile-' + first.id);
+      if (el1) {
+        el1.classList.add('wrong');
+        setTimeout(() => el1.classList.remove('wrong'), 400);
+      }
+
+      selectedTile = tile;
+      tile.selected = true;
+
+      document.body.style.transform = 'translateX(3px)';
+      setTimeout(() => document.body.style.transform = '', 60);
+
+      updateAccessibility();
+    }
+  }
+
+  // ==================================================
+  // ПОБЕДА
+  // ==================================================
+  function checkWin() {
+    if (pairsFound >= totalPairs) {
+      playing = false;
+      clearInterval(timeInterval);
+
+      const elapsed = Math.floor((Date.now() - startTime) / 1000);
+      const min = Math.floor(elapsed / 60);
+      const sec = elapsed % 60;
+      const timeStr = min + ':' + String(sec).padStart(2, '0');
+
+      finalMovesEl.textContent = moves;
+      timeResultEl.textContent = 'Время: ' + timeStr;
+
+      let rank = '🙂 Неплохо!';
+      if (moves === totalPairs) rank = '🏆 ИДЕАЛЬНО! Ни одной ошибки!';
+      else if (moves <= totalPairs + 3) rank = '👑 Почти идеально!';
+      else if (moves <= totalPairs + 8) rank = '😄 Хорошо хохочешь!';
+      else if (moves <= totalPairs + 15) rank = '😊 Нормально!';
+      rankEl.textContent = rank;
+
+      stats.gamesWon++;
+      if (stats.bestTime === 0 || elapsed < stats.bestTime) stats.bestTime = elapsed;
+      if (stats.bestMoves === 0 || moves < stats.bestMoves) stats.bestMoves = moves;
+      if (wrongAttempts === 0) stats.perfectGamesNoMistakes++;
+      if (wrongAttempts >= 5) stats.gamesWonWithComeback++;
+      saveStats();
+
+      checkAchievements();
+
+      setTimeout(() => endScreen.classList.remove('hidden'), 600);
+    }
+  }
+
+  // ==================================================
+  // СТАРТ
+  // ==================================================
+  function startGame() {
+    startScreen.classList.add('hidden');
+    endScreen.classList.add('hidden');
+    menuPanel.classList.remove('open');
+
+    buildBoard();
+    playing = true;
+    startTime = Date.now();
+    timeEl.textContent = '0:00';
+
+    stats.gamesPlayed++;
+    saveStats();
+    checkAchievements();
+
+    clearInterval(timeInterval);
+    timeInterval = setInterval(() => {
+      const elapsed = Math.floor((Date.now() - startTime) / 1000);
+      const min = Math.floor(elapsed / 60);
+      const sec = elapsed % 60;
+      timeEl.textContent = min + ':' + String(sec).padStart(2, '0');
+    }, 1000);
+  }
+
+  // ==================================================
+  // ПЕРЕМЕШИВАНИЕ
+  // ==================================================
+  function reshuffle() {
+    if (!playing) return;
+    const active = tiles.filter(t => !t.removed);
+    if (active.length < 2) return;
+
+    if (selectedTile) {
+      selectedTile.selected = false;
+      selectedTile = null;
+    }
+
+    const boardW = window.innerWidth;
+    const boardH = window.innerHeight;
+    const numClusters = Math.max(2, Math.min(4, Math.ceil(active.length / 4)));
+    const centers = [];
+    for (let i = 0; i < numClusters; i++) {
+      centers.push({
+        x: 130 + Math.random() * Math.max(boardW - 260, 100),
+        y: 120 + Math.random() * Math.max(boardH - 300, 100)
+      });
+    }
+
+    const zs = [];
+    for (let i = 1; i <= active.length; i++) zs.push(i);
+    shuffle(zs);
+
+    active.forEach((t, i) => {
+      const c = centers[i % numClusters];
+      const angle = Math.random() * Math.PI * 2;
+      const radius = Math.random() * 75;
+      t.x = c.x + Math.cos(angle) * radius;
+      t.y = c.y + Math.sin(angle) * radius;
+      t.z = zs[i];
+      const el = document.getElementById('tile-' + t.id);
+      if (el) {
+        el.style.left = t.x + 'px';
+        el.style.top = t.y + 'px';
+        el.style.zIndex = t.z;
+      }
+    });
+
+    requestAnimationFrame(() => updateAccessibility());
+    showToast('🔄 Перемешано!');
+
+    stats.shufflesUsed++;
+    saveStats();
+    checkAchievements();
+  }
+
+  // ==================================================
+  // СЕКРЕТЫ
+  // ==================================================
+  const KONAMI = ['ArrowUp','ArrowUp','ArrowDown','ArrowDown','ArrowLeft','ArrowRight','ArrowLeft','ArrowRight','b','a'];
+  let konamiBuffer = [];
+  let typedBuffer = '';
+
+  document.addEventListener('keydown', (e) => {
+    const key = e.key;
+
+    konamiBuffer.push(key.length === 1 ? key.toLowerCase() : key);
+    if (konamiBuffer.length > KONAMI.length) konamiBuffer.shift();
+    if (konamiBuffer.join(',') === KONAMI.join(',')) {
+      konamiBuffer = [];
+      activateRainbowMode();
+    }
+
+    if (key.length === 1) {
+      typedBuffer += key.toLowerCase();
+      if (typedBuffer.length > 20) typedBuffer = typedBuffer.slice(-20);
+      if (typedBuffer.endsWith('хахаха')) {
+        typedBuffer = '';
+        stats.wordUsed = true;
+        saveStats();
+        checkAchievements();
+        showToast('💬 Слово силы! Раскрываю пару!');
+        autoRevealPair();
+      }
+    }
+  });
+
+  function activateRainbowMode() {
+    if (rainbowMode) return;
+    rainbowMode = true;
+    document.body.classList.add('rainbow-mode');
+    stats.rainbowActivated = true;
+    saveStats();
+    checkAchievements();
+    showToast('🌈 РАДУЖНЫЙ РЕЖИМ!');
+
+    document.querySelectorAll('.bubble').forEach(b => {
+      b.style.background = 'radial-gradient(circle at 30% 30%, rgba(255,255,255,0.9), hsla(' + Math.random()*360 + ', 100%, 60%, 0.3))';
+    });
+
+    tiles.forEach(t => {
+      if (t.removed) return;
+      const el = document.getElementById('tile-' + t.id);
+      if (el) {
+        const hue = Math.random() * 360;
+        el.style.background = `linear-gradient(135deg, hsl(${hue}, 90%, 55%), hsl(${(hue+60)%360}, 90%, 55%))`;
+      }
+    });
+  }
+
+  function autoRevealPair() {
+    const accessible = tiles.filter(t => !t.removed && !t.blocked);
+    const byValue = {};
+    accessible.forEach(t => {
+      if (!byValue[t.value]) byValue[t.value] = [];
+      byValue[t.value].push(t);
+    });
+
+    for (const v in byValue) {
+      if (byValue[v].length >= 2) {
+        const [a, b] = byValue[v];
+        [a, b].forEach(t => {
+          const el = document.getElementById('tile-' + t.id);
+          if (el) {
+            el.style.boxShadow = '0 0 40px #0f0, 0 0 80px #0f0, 0 0 120px #0f0';
+            setTimeout(() => { if (el) el.style.boxShadow = ''; }, 2500);
+          }
+        });
+        return;
+      }
+    }
+  }
+
+  titleEl.addEventListener('click', () => {
+    stats.titleClicks++;
+    saveStats();
+    titleEl.style.transform = `scale(${1 + (stats.titleClicks % 10) * 0.05}) rotate(${(stats.titleClicks % 10) * 5}deg)`;
+    setTimeout(() => titleEl.style.transform = '', 200);
+
+    if (stats.titleClicks >= 7) {
+      for (let i = 0; i < 40; i++) {
+        setTimeout(() => burstEmojis(Math.random() * window.innerWidth, Math.random() * window.innerHeight, 2), i * 30);
+      }
+      checkAchievements();
+    }
+  });
+
+  // ==================================================
+  // МЕНЮ
+  // ==================================================
+  function openMenu() {
+    renderStats();
+    renderAllLists();
+    updateCounters();
+    menuPanel.classList.add('open');
+  }
+
+  menuBtn.addEventListener('click', openMenu);
+  document.getElementById('close-menu').addEventListener('click', () => {
+    menuPanel.classList.remove('open');
+  });
+  menuPanel.addEventListener('click', (e) => {
+    if (e.target === menuPanel) menuPanel.classList.remove('open');
+  });
+
+  document.querySelectorAll('.menu-tab').forEach(tab => {
+    tab.addEventListener('click', () => {
+      const tabId = tab.dataset.tab;
+      document.querySelectorAll('.menu-tab').forEach(t => t.classList.remove('active'));
+      tab.classList.add('active');
+      document.querySelectorAll('.menu-pane').forEach(p => p.classList.remove('active'));
+      document.getElementById('pane-' + tabId).classList.add('active');
+    });
+  });
+
+  document.getElementById('reset-progress').addEventListener('click', () => {
+    if (!confirm('Сбросить весь прогресс: достижения и статистику?')) return;
+    unlockedAch = new Set();
+    stats = { ...defaultStats };
+    saveAch();
+    saveStats();
+    updateCounters();
+    renderStats();
+    renderAllLists();
+    showToast('🗑 Прогресс сброшен!');
+  });
+
+  // ==================================================
+  // КНОПКИ
+  // ==================================================
+  document.getElementById('start-btn').addEventListener('click', startGame);
+  document.getElementById('restart-btn').addEventListener('click', startGame);
+  shuffleBtn.addEventListener('click', reshuffle);
+
+  gameArea.addEventListener('click', (e) => {
+    if (e.target === gameArea && selectedTile) {
+      selectedTile.selected = false;
+      selectedTile = null;
+      updateAccessibility();
+    }
+  });
+
+  // INIT
+  updateCounters();
+  checkAchievements();
+</script>
 </body>
-</html>
+ </html>
