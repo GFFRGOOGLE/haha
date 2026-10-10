@@ -1,1 +1,2263 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>ХАХАХА</title>
 
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="ХАХАХА">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="application-name" content="ХАХАХА">
+<meta name="theme-color" content="#ece2cd">
+<meta name="description" content="ХАХАХА — головоломка с надписями">
+
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Cdefs%3E%3ClinearGradient id='bg' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0' stop-color='%23f0e7d4'/%3E%3Cstop offset='0.5' stop-color='%23ece2cd'/%3E%3Cstop offset='1' stop-color='%23ddd0b2'/%3E%3C/linearGradient%3E%3ClinearGradient id='ink' x1='0' y1='0' x2='0' y2='1'%3E%3Cstop offset='0' stop-color='%23a02820'/%3E%3Cstop offset='1' stop-color='%236b1610'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='512' height='512' rx='108' fill='url(%23bg)'/%3E%3Crect x='24' y='24' width='464' height='464' rx='90' fill='none' stroke='%233a2c1c' stroke-width='6' opacity='0.35'/%3E%3Crect x='40' y='40' width='432' height='432' rx='78' fill='none' stroke='%233a2c1c' stroke-width='2' opacity='0.5'/%3E%3Ctext x='256' y='358' font-size='300' text-anchor='middle' font-family='Georgia,serif' font-weight='700' fill='url(%23ink)'%3EХ%3C/text%3E%3C/svg%3E">
+
+<link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 180 180'%3E%3Crect width='180' height='180' rx='38' fill='%23ece2cd'/%3E%3Crect x='8' y='8' width='164' height='164' rx='32' fill='none' stroke='%233a2c1c' stroke-width='2' opacity='0.35'/%3E%3Ctext x='90' y='128' font-size='106' text-anchor='middle' font-family='Georgia,serif' font-weight='700' fill='%238b2019'%3EХ%3C/text%3E%3C/svg%3E">
+
+<style>
+  :root {
+    --paper: #ece2cd;
+    --paper-d: #ddd0b2;
+    --ink: #26201a;
+    --ink-soft: #5a4a38;
+    --seal: #8b2019;
+    --gold: #9c7a2c;
+    --frame: #3a2c1c;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+  html, body {
+    height: 100%; width: 100%;
+    font-family: Georgia, 'Times New Roman', serif;
+    overflow: hidden;
+    -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none; user-select: none;
+    color: var(--ink);
+    touch-action: none;
+    background: var(--paper);
+    -webkit-text-size-adjust: 100%; -ms-text-size-adjust: 100%; text-size-adjust: 100%;
+  }
+
+  body::before {
+    content: '';
+    position: fixed; inset: 0;
+    background:
+      radial-gradient(ellipse 50% 40% at 20% 15%, rgba(180, 140, 80, 0.15), transparent 70%),
+      radial-gradient(ellipse 55% 45% at 80% 85%, rgba(140, 100, 50, 0.12), transparent 70%),
+      radial-gradient(ellipse 70% 60% at 50% 50%, rgba(160, 120, 60, 0.06), transparent 80%);
+    pointer-events: none; z-index: 0;
+  }
+
+  body::after {
+    content: '';
+    position: fixed; inset: 0;
+    background-image:
+      repeating-linear-gradient(0deg, transparent 0, transparent 3px, rgba(80,60,30,0.025) 3px, rgba(80,60,30,0.025) 4px),
+      repeating-linear-gradient(90deg, transparent 0, transparent 5px, rgba(80,60,30,0.02) 5px, rgba(80,60,30,0.02) 6px);
+    pointer-events: none; z-index: 1;
+    mix-blend-mode: multiply;
+  }
+
+  .frame {
+    position: fixed; inset: 12px;
+    border: 1px solid var(--frame);
+    border-radius: 2px;
+    pointer-events: none; z-index: 5;
+    opacity: 0.4;
+  }
+  .frame::before {
+    content: '';
+    position: absolute; inset: 4px;
+    border: 1px solid var(--frame);
+    border-radius: 1px;
+    opacity: 0.5;
+  }
+
+  #viewport {
+    position: fixed; inset: 0;
+    overflow: hidden; z-index: 10;
+    touch-action: none; cursor: grab;
+    overscroll-behavior: none;
+  }
+  #viewport.dragging { cursor: grabbing; }
+  #world {
+    position: absolute; top: 0; left: 0;
+    transform-origin: 0 0;
+    will-change: transform;
+    backface-visibility: hidden;
+  }
+
+  .tile {
+    position: absolute;
+    transform: translate(-50%, -50%) rotate(var(--rot, 0deg));
+    padding: var(--pad-y) var(--pad-x);
+    border-radius: 2px;
+    font-size: var(--fs);
+    font-weight: 700;
+    font-family: Georgia, 'Times New Roman', serif;
+    color: var(--fg);
+    cursor: pointer;
+    white-space: nowrap;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    box-shadow: 2px 3px 0 var(--shadow), inset 0 0 0 1px rgba(255, 255, 255, 0.15);
+    letter-spacing: 0.02em;
+    will-change: filter;
+    text-shadow: 0 1px 0 rgba(255, 255, 255, 0.15);
+  }
+  .tile:hover:not(.blocked) { filter: brightness(1.12); }
+  .tile.blocked { filter: brightness(0.55) saturate(0.4); cursor: not-allowed; }
+  .tile.shake { animation: shake 0.35s ease; }
+  @keyframes shake {
+    0%, 100% { transform: translate(-50%, -50%) rotate(var(--rot, 0deg)) translateX(0); }
+    25%      { transform: translate(-50%, -50%) rotate(var(--rot, 0deg)) translateX(-5px); }
+    75%      { transform: translate(-50%, -50%) rotate(var(--rot, 0deg)) translateX(5px); }
+  }
+
+  .ghost {
+    position: fixed;
+    pointer-events: none; z-index: 900;
+    font-family: Georgia, serif;
+    font-weight: 700;
+    color: var(--fg);
+    display: flex; align-items: center; justify-content: center;
+    border-radius: 2px;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    box-shadow: 2px 3px 0 var(--shadow);
+    transition:
+      left 0.5s cubic-bezier(0.4, 0.05, 0.3, 1),
+      top 0.5s cubic-bezier(0.4, 0.05, 0.3, 1),
+      width 0.5s cubic-bezier(0.4, 0.05, 0.3, 1),
+      height 0.5s cubic-bezier(0.4, 0.05, 0.3, 1),
+      font-size 0.5s cubic-bezier(0.4, 0.05, 0.3, 1),
+      padding 0.5s cubic-bezier(0.4, 0.05, 0.3, 1);
+    overflow: hidden; white-space: nowrap;
+    will-change: left, top, width, height;
+  }
+
+  .hud {
+    position: fixed; top: 22px; left: 0; right: 0;
+    display: flex; justify-content: center; gap: 0;
+    z-index: 200; pointer-events: none;
+    padding: 0 26px;
+    font-family: 'Courier New', monospace;
+  }
+  .hud-item {
+    background: var(--paper);
+    border: 1px solid var(--frame);
+    border-right: none;
+    padding: 7px 20px;
+    color: var(--ink-soft);
+    font-size: 10px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    min-width: 88px;
+    text-align: center;
+    font-weight: 700;
+    position: relative;
+  }
+  .hud-item:first-child { border-radius: 2px 0 0 2px; }
+  .hud-item:last-child { border-radius: 0 2px 2px 0; border-right: 1px solid var(--frame); }
+  .hud-item::after {
+    content: '';
+    position: absolute; inset: 3px;
+    border: 1px solid var(--frame);
+    pointer-events: none; opacity: 0.15;
+  }
+  .hud-item .value {
+    display: block; font-size: 18px; font-weight: 800;
+    color: var(--ink); margin-top: 2px;
+    text-transform: none; letter-spacing: 0.02em;
+  }
+  .hud-item.level .value { color: var(--seal); }
+
+  #level-progress {
+    position: fixed; top: 84px; left: 50%; transform: translateX(-50%);
+    width: min(400px, 60vw); height: 3px;
+    background: rgba(58, 44, 28, 0.15);
+    overflow: hidden; z-index: 200; pointer-events: none;
+  }
+  #level-progress-fill {
+    height: 100%; width: 0%;
+    background: var(--seal);
+    transition: width 0.3s;
+  }
+
+  .controls {
+    position: fixed; top: 22px; right: 26px;
+    display: flex; flex-direction: column; gap: 5px;
+    z-index: 250;
+    font-family: 'Courier New', monospace;
+  }
+  .ctl-btn {
+    background: var(--paper);
+    border: 1px solid var(--frame);
+    border-radius: 2px;
+    padding: 8px 14px;
+    color: var(--ink);
+    font-family: 'Courier New', monospace;
+    font-size: 11px;
+    font-weight: 700;
+    cursor: pointer;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    transition: all 0.1s;
+    display: flex; align-items: center; gap: 8px;
+    white-space: nowrap;
+    box-shadow: 2px 2px 0 rgba(58, 44, 28, 0.2);
+  }
+  .ctl-btn:hover {
+    background: var(--paper-d);
+    transform: translate(-1px, -1px);
+    box-shadow: 3px 3px 0 rgba(58, 44, 28, 0.3);
+  }
+  .ctl-btn:active { transform: translate(1px, 1px); box-shadow: 1px 1px 0 rgba(58, 44, 28, 0.2); }
+  .ctl-btn.seal { color: var(--seal); border-color: var(--seal); }
+  .ctl-btn.seal:hover { background: rgba(139, 32, 25, 0.08); }
+  .ctl-btn.download { color: #2c5e3a; border-color: #2c5e3a; }
+  .ctl-btn.download:hover { background: rgba(44, 94, 58, 0.08); }
+  #menu-btn .count {
+    background: var(--frame); color: var(--paper);
+    padding: 1px 6px; font-size: 10px; font-weight: 800;
+    letter-spacing: 0.05em;
+  }
+
+  #tray {
+    position: fixed; bottom: 22px; left: 50%;
+    transform: translateX(-50%);
+    display: flex; flex-direction: column; align-items: center; gap: 6px;
+    z-index: 400; pointer-events: none;
+    font-family: 'Courier New', monospace;
+  }
+  #tray-label {
+    font-size: 9px; color: var(--ink-soft);
+    letter-spacing: 0.28em; text-transform: uppercase;
+    font-weight: 700; padding: 2px 12px;
+    background: var(--paper);
+    border: 1px solid var(--frame);
+    border-radius: 2px; opacity: 0.75;
+  }
+  #tray-slots {
+    display: flex; gap: 4px;
+    padding: 7px 9px;
+    background: var(--paper);
+    border: 1px solid var(--frame);
+    border-radius: 2px;
+    box-shadow: 3px 3px 0 rgba(58, 44, 28, 0.15);
+    pointer-events: auto;
+    position: relative;
+  }
+  #tray-slots::before {
+    content: '';
+    position: absolute; inset: 2px;
+    border: 1px solid var(--frame);
+    pointer-events: none; opacity: 0.2;
+  }
+  #tray.warning #tray-slots {
+    border-color: var(--seal);
+    box-shadow: 3px 3px 0 rgba(139, 32, 25, 0.4), 0 0 0 2px rgba(139, 32, 25, 0.2);
+    animation: trayWarn 0.7s ease-in-out infinite;
+  }
+  @keyframes trayWarn {
+    0%, 100% { box-shadow: 3px 3px 0 rgba(139, 32, 25, 0.4), 0 0 0 2px rgba(139, 32, 25, 0.2); }
+    50%      { box-shadow: 3px 3px 0 rgba(139, 32, 25, 0.7), 0 0 0 4px rgba(139, 32, 25, 0.35); }
+  }
+  .slot {
+    width: clamp(34px, 4.8vw, 46px);
+    height: clamp(40px, 5.6vw, 52px);
+    border: 1px dashed rgba(58, 44, 28, 0.3);
+    border-radius: 1px;
+    background: rgba(58, 44, 28, 0.04);
+    display: flex; align-items: center; justify-content: center;
+    overflow: visible; position: relative; z-index: 1;
+  }
+  .slot.filled {
+    border-style: solid;
+    border-color: rgba(58, 44, 28, 0.5);
+    background: rgba(58, 44, 28, 0.06);
+  }
+  .tray-tile {
+    width: 100%; height: 100%;
+    border-radius: 1px;
+    display: flex; align-items: center; justify-content: center;
+    font-family: Georgia, serif;
+    font-size: clamp(9px, 1vw, 11px);
+    font-weight: 700;
+    color: var(--fg);
+    padding: 2px; text-align: center;
+    overflow: hidden; word-break: break-word; line-height: 1.05;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    box-shadow: 1px 1px 0 var(--shadow);
+    position: relative;
+  }
+  .tray-tile.has-two {
+    box-shadow: 1px 1px 0 var(--shadow), 0 0 0 2px var(--gold);
+    animation: hasTwo 1.4s ease-in-out infinite;
+  }
+  @keyframes hasTwo {
+    0%, 100% { box-shadow: 1px 1px 0 var(--shadow), 0 0 0 2px var(--gold); }
+    50%      { box-shadow: 1px 1px 0 var(--shadow), 0 0 0 3px var(--gold), 0 0 12px rgba(156, 122, 44, 0.6); }
+  }
+  .tray-tile .tray-counter {
+    position: absolute; top: -7px; right: -7px;
+    background: var(--gold); color: var(--paper);
+    font-family: 'Courier New', monospace;
+    font-size: 8px; font-weight: 800;
+    padding: 1px 4px; border-radius: 1px;
+    border: 1px solid var(--frame);
+    line-height: 1; z-index: 2; letter-spacing: 0;
+  }
+  .tray-tile.matching { animation: trayMatch 0.5s ease-out forwards; }
+  @keyframes trayMatch {
+    0%   { transform: scale(1); }
+    40%  { transform: scale(1.3); box-shadow: 0 0 0 3px var(--seal), 0 0 22px rgba(139, 32, 25, 0.7); }
+    100% { transform: scale(0) rotate(20deg); opacity: 0; }
+  }
+
+  .toast {
+    position: fixed; top: 100px; left: 50%;
+    transform: translateX(-50%) translateY(-14px);
+    background: var(--ink); color: var(--paper);
+    padding: 10px 22px; border-radius: 2px;
+    font-family: 'Courier New', monospace;
+    font-size: 12px; font-weight: 700;
+    letter-spacing: 0.1em; text-transform: uppercase;
+    z-index: 1000; opacity: 0;
+    transition: all 0.3s;
+    pointer-events: none;
+    box-shadow: 3px 3px 0 rgba(58, 44, 28, 0.4);
+  }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+  .ach-popup {
+    position: fixed; top: 90px; right: -420px;
+    display: flex; align-items: center; gap: 14px;
+    padding: 12px 18px;
+    min-width: 300px; max-width: 360px;
+    background: var(--paper);
+    border: 1px solid var(--frame);
+    border-left: 4px solid var(--frame);
+    border-radius: 2px;
+    z-index: 2000;
+    transition: right 0.45s cubic-bezier(0.2, 0.9, 0.4, 1);
+    box-shadow: 4px 4px 0 rgba(58, 44, 28, 0.25);
+    font-family: 'Courier New', monospace;
+  }
+  .ach-popup.show { right: 22px; }
+  .ach-popup.bronze { border-left-color: #b87333; }
+  .ach-popup.silver { border-left-color: #8c8c8c; }
+  .ach-popup.gold   { border-left-color: var(--gold); }
+  .ach-popup .ach-label { font-size: 9px; color: var(--ink-soft); letter-spacing: 0.2em; text-transform: uppercase; font-weight: 700; }
+  .ach-popup .ach-name { font-family: Georgia, serif; font-size: 15px; font-weight: 700; color: var(--ink); margin-top: 4px; }
+  .ach-popup.bronze .ach-name { color: #8b5a2b; }
+  .ach-popup.silver .ach-name { color: #4a4a4a; }
+  .ach-popup.gold   .ach-name { color: var(--seal); }
+  .ach-popup .ach-desc { font-size: 11px; color: var(--ink-soft); margin-top: 3px; line-height: 1.4; }
+
+  .ach-popup.special {
+    background: linear-gradient(135deg, #fff8e6, #ffe4b8);
+    border: 2px solid #d4952a;
+    border-left: 6px solid #d4952a;
+    min-width: 340px;
+    max-width: 400px;
+    padding: 16px 22px;
+    box-shadow:
+      6px 6px 0 rgba(212, 149, 42, 0.35),
+      0 0 40px rgba(255, 200, 80, 0.6);
+    animation: specialPulse 1.2s ease-in-out infinite;
+  }
+  @keyframes specialPulse {
+    0%, 100% { box-shadow: 6px 6px 0 rgba(212, 149, 42, 0.35), 0 0 40px rgba(255, 200, 80, 0.6); }
+    50%      { box-shadow: 6px 6px 0 rgba(212, 149, 42, 0.5), 0 0 60px rgba(255, 200, 80, 0.9); }
+  }
+  .ach-popup.special .ach-label { color: #b06a10; font-size: 11px; letter-spacing: 0.22em; }
+  .ach-popup.special .ach-name {
+    font-family: Georgia, serif;
+    color: #8b2019;
+    font-size: 22px;
+    font-weight: 800;
+    margin-top: 6px;
+    text-shadow: 0 2px 0 rgba(255, 255, 255, 0.5);
+  }
+  .ach-popup.special .ach-desc {
+    font-size: 14px;
+    color: #5a3a10;
+    margin-top: 6px;
+    font-style: italic;
+    line-height: 1.5;
+    font-family: Georgia, serif;
+  }
+  .ach-popup.special::before {
+    content: '★';
+    position: absolute;
+    top: 8px;
+    right: 12px;
+    color: #d4952a;
+    font-size: 20px;
+    animation: starSpin 2s linear infinite;
+  }
+  @keyframes starSpin {
+    0% { transform: rotate(0deg); opacity: 1; }
+    50% { transform: rotate(180deg); opacity: 0.6; }
+    100% { transform: rotate(360deg); opacity: 1; }
+  }
+
+  .menu-panel {
+    position: fixed; inset: 0; z-index: 600;
+    display: flex; justify-content: center; align-items: center;
+    background: rgba(30, 22, 14, 0.72);
+    opacity: 0; pointer-events: none;
+    transition: opacity 0.2s; padding: 24px;
+  }
+  .menu-panel.open { opacity: 1; pointer-events: auto; }
+  .menu-inner {
+    background: var(--paper);
+    border: 1px solid var(--frame);
+    border-radius: 2px;
+    max-width: 760px; width: 100%; max-height: 88vh;
+    display: flex; flex-direction: column;
+    color: var(--ink); overflow: hidden;
+    box-shadow: 6px 6px 0 rgba(58, 44, 28, 0.3), 0 20px 60px rgba(0, 0, 0, 0.5);
+    position: relative;
+  }
+  .menu-inner::before {
+    content: '';
+    position: absolute; inset: 5px;
+    border: 1px solid var(--frame);
+    pointer-events: none; opacity: 0.3; z-index: 1;
+  }
+  .menu-tabs {
+    display: flex;
+    border-bottom: 1px solid var(--frame);
+    background: rgba(58, 44, 28, 0.04);
+    overflow-x: auto;
+    position: relative; z-index: 2;
+  }
+  .menu-tab {
+    flex: 1; min-width: 100px;
+    padding: 14px 10px;
+    background: transparent; border: none;
+    border-right: 1px solid var(--frame);
+    color: var(--ink-soft);
+    font-family: 'Courier New', monospace;
+    font-size: 11px; font-weight: 700;
+    cursor: pointer; letter-spacing: 0.1em;
+    text-transform: uppercase;
+    display: flex; align-items: center; justify-content: center;
+    gap: 6px; white-space: nowrap;
+  }
+  .menu-tab:last-child { border-right: none; }
+  .menu-tab:hover { background: rgba(58, 44, 28, 0.06); color: var(--ink); }
+  .menu-tab.active { background: var(--paper-d); color: var(--seal); box-shadow: inset 0 -2px 0 var(--seal); }
+  .menu-tab .tab-badge { font-size: 9px; color: var(--ink-soft); border: 1px solid var(--frame); padding: 1px 6px; }
+  .menu-tab.active .tab-badge { color: var(--seal); border-color: var(--seal); }
+
+  .menu-content { flex: 1; overflow-y: auto; padding: 20px 24px; position: relative; z-index: 2; }
+  .menu-pane { display: none; }
+  .menu-pane.active { display: block; }
+
+  .section-title {
+    font-family: 'Courier New', monospace;
+    font-size: 11px; color: var(--ink);
+    margin-bottom: 12px; letter-spacing: 0.2em;
+    text-transform: uppercase; font-weight: 700;
+    display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+    padding-bottom: 6px;
+    border-bottom: 1px solid var(--frame);
+  }
+  .section-title .hint { font-size: 10px; color: var(--ink-soft); font-weight: 700; letter-spacing: 0.05em; text-transform: none; }
+
+  .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 8px; margin-bottom: 6px; }
+  .stat-card {
+    background: rgba(58, 44, 28, 0.05);
+    border: 1px solid var(--frame);
+    padding: 12px 8px; text-align: center; position: relative;
+  }
+  .stat-card::after { content: ''; position: absolute; inset: 2px; border: 1px solid var(--frame); pointer-events: none; opacity: 0.15; }
+  .stat-card .stat-value { font-family: Georgia, serif; font-size: 22px; color: var(--seal); font-weight: 700; line-height: 1.1; }
+  .stat-card .stat-label { font-family: 'Courier New', monospace; font-size: 9.5px; color: var(--ink-soft); text-transform: uppercase; letter-spacing: 0.14em; margin-top: 5px; font-weight: 700; }
+
+  .item-row {
+    display: flex; align-items: center; gap: 12px;
+    padding: 10px 14px; margin-bottom: 6px;
+    background: rgba(58, 44, 28, 0.04);
+    border: 1px solid var(--frame);
+    border-left: 4px solid rgba(58, 44, 28, 0.25);
+    font-size: 13px; position: relative;
+  }
+  .item-row.unlocked.bronze { border-left-color: #b87333; background: rgba(184, 115, 51, 0.08); }
+  .item-row.unlocked.silver { border-left-color: #8c8c8c; background: rgba(140, 140, 140, 0.08); }
+  .item-row.unlocked.gold   { border-left-color: var(--gold); background: rgba(156, 122, 44, 0.1); }
+  .item-row .row-text { flex: 1; line-height: 1.35; min-width: 0; }
+  .item-row .row-text .name { font-family: Georgia, serif; color: var(--ink); font-weight: 700; font-size: 13.5px; }
+  .item-row.unlocked.bronze .row-text .name { color: #8b5a2b; }
+  .item-row.unlocked.silver .row-text .name { color: #4a4a4a; }
+  .item-row.unlocked.gold   .row-text .name { color: var(--seal); }
+  .item-row .row-text .desc { font-family: 'Courier New', monospace; font-size: 11px; color: var(--ink-soft); margin-top: 2px; }
+  .item-row .row-side { display: flex; flex-direction: column; align-items: flex-end; gap: 4px; flex-shrink: 0; }
+  .rarity-badge {
+    font-family: 'Courier New', monospace;
+    font-size: 9px; padding: 2px 7px;
+    font-weight: 700; letter-spacing: 0.1em;
+    text-transform: uppercase; white-space: nowrap;
+    border: 1px solid var(--frame); color: var(--ink-soft);
+  }
+  .rarity-badge.bronze { color: #8b5a2b; border-color: #8b5a2b; }
+  .rarity-badge.silver { color: #4a4a4a; border-color: #4a4a4a; }
+  .rarity-badge.gold   { color: var(--seal); border-color: var(--seal); }
+  .item-row.hidden-locked { border-style: dashed; border-left-style: dashed; background: repeating-linear-gradient(45deg, rgba(58,44,28,0.03) 0 8px, transparent 8px 16px); }
+  .item-row.hidden-locked .row-text .name { font-family: 'Courier New', monospace; color: var(--ink-soft); letter-spacing: 0.2em; }
+  .item-row.hidden-locked .row-text .desc { font-style: italic; }
+  .item-row.hidden-locked .row-text .name.name-visible {
+    font-family: Georgia, serif;
+    color: var(--ink);
+    letter-spacing: normal;
+    font-size: 13.5px;
+    font-weight: 700;
+  }
+  .item-row.visible-locked .row-text .name { color: var(--ink-soft); }
+  .secret-badge {
+    font-family: 'Courier New', monospace;
+    font-size: 9px; padding: 2px 7px;
+    font-weight: 700; letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--seal); border: 1px dashed var(--seal);
+  }
+  .unlocked-check {
+    font-family: 'Courier New', monospace;
+    font-size: 9px; color: #4a7a3c;
+    font-weight: 700; letter-spacing: 0.08em;
+    text-transform: uppercase;
+    padding: 2px 6px; border: 1px solid #4a7a3c;
+  }
+
+  .menu-footer {
+    padding: 14px 24px 18px;
+    display: flex; gap: 10px;
+    border-top: 1px solid var(--frame);
+    background: rgba(58, 44, 28, 0.05);
+    position: relative; z-index: 2;
+  }
+  .menu-btn {
+    flex: 1; padding: 12px 18px;
+    font-family: 'Courier New', monospace;
+    font-size: 11px; font-weight: 700;
+    border: 1px solid var(--frame);
+    background: var(--paper); color: var(--ink);
+    letter-spacing: 0.1em; text-transform: uppercase;
+    cursor: pointer;
+    box-shadow: 2px 2px 0 rgba(58, 44, 28, 0.2);
+  }
+  .menu-btn:hover { background: var(--paper-d); transform: translate(-1px, -1px); box-shadow: 3px 3px 0 rgba(58, 44, 28, 0.3); }
+  .menu-btn:active { transform: translate(1px, 1px); box-shadow: 1px 1px 0 rgba(58, 44, 28, 0.2); }
+  .menu-btn.danger { flex: 0 0 auto; color: var(--seal); border-color: var(--seal); }
+
+  .overlay {
+    position: fixed; inset: 0; z-index: 500;
+    display: flex; flex-direction: column;
+    justify-content: center; align-items: center;
+    background: var(--paper);
+    color: var(--ink); text-align: center; padding: 26px;
+    overflow-y: auto;
+  }
+  .overlay.hidden { display: none; }
+  .overlay h1 {
+    font-family: Georgia, serif;
+    font-size: clamp(48px, 10vw, 120px);
+    margin-bottom: 16px; color: var(--ink);
+    font-weight: 700; letter-spacing: 0.14em;
+    cursor: pointer;
+    text-shadow: 3px 3px 0 rgba(139, 32, 25, 0.15);
+    position: relative;
+  }
+  .overlay h1::after {
+    content: ''; position: absolute; left: 50%; bottom: -8px;
+    transform: translateX(-50%);
+    width: 60%; height: 1px;
+    background: var(--frame); opacity: 0.4;
+  }
+  .overlay p {
+    font-family: Georgia, serif;
+    font-size: clamp(13px, 1.7vw, 16px);
+    margin-bottom: 8px; max-width: 560px;
+    line-height: 1.65; color: var(--ink-soft);
+  }
+  .overlay .result-score {
+    font-family: Georgia, serif;
+    font-size: clamp(48px, 9vw, 96px);
+    color: var(--seal); font-weight: 700;
+    margin: 12px 0; letter-spacing: 0.02em;
+  }
+  .overlay .level-badge {
+    display: inline-block;
+    font-family: 'Courier New', monospace;
+    padding: 4px 16px;
+    border: 1px solid var(--frame);
+    color: var(--ink);
+    font-size: 11px; font-weight: 700;
+    letter-spacing: 0.2em; text-transform: uppercase;
+    margin-bottom: 14px;
+    background: rgba(58, 44, 28, 0.04);
+  }
+  .btn {
+    display: inline-block;
+    padding: 14px 40px;
+    margin-top: 10px;
+    font-family: 'Courier New', monospace;
+    font-size: 13px; font-weight: 700;
+    color: var(--paper); background: var(--ink);
+    border: 1px solid var(--frame);
+    cursor: pointer;
+    letter-spacing: 0.16em; text-transform: uppercase;
+    box-shadow: 3px 3px 0 rgba(58, 44, 28, 0.35);
+    transition: all 0.1s;
+  }
+  .btn:hover { transform: translate(-1px, -1px); box-shadow: 4px 4px 0 rgba(58, 44, 28, 0.45); }
+  .btn:active { transform: translate(2px, 2px); box-shadow: 1px 1px 0 rgba(58, 44, 28, 0.35); }
+  .btn.btn-seal { background: var(--seal); color: var(--paper); }
+  .btn.btn-secondary { background: var(--paper); color: var(--ink); }
+  .btn.btn-download { background: #2c5e3a; color: var(--paper); font-size: 12px; padding: 12px 28px; }
+  .overlay .btn-row {
+    display: flex; gap: 10px; flex-wrap: wrap;
+    justify-content: center; margin-top: 20px;
+  }
+  .overlay .btn-row .btn { margin-top: 0; }
+
+  .offline-hint {
+    margin-top: 18px;
+    font-family: 'Courier New', monospace;
+    font-size: 11px;
+    color: var(--ink-soft);
+    letter-spacing: 0.02em;
+    max-width: 500px;
+    line-height: 1.7;
+    padding: 12px 18px;
+    border: 1px dashed var(--frame);
+    background: rgba(58, 44, 28, 0.04);
+    text-align: left;
+  }
+  .offline-hint b { color: var(--ink); }
+
+  @media (max-width: 780px) {
+    .frame { inset: 8px; }
+    .hud { top: 16px; padding: 0 14px; }
+    .hud-item { padding: 5px 8px; font-size: 9px; min-width: 58px; letter-spacing: 0.14em; }
+    .hud-item .value { font-size: 14px; }
+    #level-progress { top: 66px; height: 2px; }
+    .controls { top: 16px; right: 14px; gap: 4px; }
+    .ctl-btn { padding: 6px 9px; font-size: 10px; letter-spacing: 0.05em; gap: 5px; }
+    #menu-btn .count { font-size: 9px; padding: 1px 4px; }
+    #tray { bottom: 14px; }
+    #tray-label { font-size: 8px; letter-spacing: 0.2em; }
+    #tray-slots { padding: 6px 8px; gap: 3px; }
+    .menu-tab { padding: 12px 6px; font-size: 10px; min-width: 72px; gap: 4px; }
+    .menu-tab .tab-badge { font-size: 8px; padding: 1px 4px; }
+    .menu-content { padding: 14px 12px; }
+    .menu-btn { padding: 10px 12px; font-size: 10px; }
+    .item-row { padding: 9px 10px; gap: 8px; }
+    .item-row .row-text .name { font-size: 12px; }
+    .item-row .row-text .desc { font-size: 10px; }
+    .rarity-badge, .secret-badge, .unlocked-check { font-size: 8px; padding: 1px 5px; }
+    .stats-grid { grid-template-columns: repeat(2, 1fr); gap: 6px; }
+    .stat-card { padding: 10px 6px; }
+    .stat-card .stat-value { font-size: 18px; }
+    .stat-card .stat-label { font-size: 8.5px; }
+    .ach-popup {
+      min-width: auto;
+      max-width: calc(100vw - 20px);
+      top: auto; bottom: 110px; right: -110vw;
+      padding: 10px 14px;
+    }
+    .ach-popup.show { right: 10px; }
+    .ach-popup.special { min-width: auto; max-width: calc(100vw - 20px); }
+    .ach-popup.special .ach-name { font-size: 18px; }
+    .ach-popup.special .ach-desc { font-size: 12px; }
+    .btn { padding: 12px 26px; font-size: 11px; }
+    .overlay h1 { font-size: clamp(40px, 12vw, 72px); }
+    .overlay .result-score { font-size: clamp(40px, 14vw, 72px); }
+  }
+</style>
+</head>
+<body>
+
+<div class="frame"></div>
+
+<div class="hud" id="hud">
+  <div class="hud-item level">Уровень<span class="value" id="level-display">1</span></div>
+  <div class="hud-item">Собрано<span class="value" id="pairs">0/25</span></div>
+  <div class="hud-item">Ходы<span class="value" id="moves">0</span></div>
+  <div class="hud-item">Время<span class="value" id="time">0:00</span></div>
+</div>
+
+<div id="level-progress"><div id="level-progress-fill"></div></div>
+
+<div class="controls" id="controls">
+  <button class="ctl-btn seal" id="menu-btn">Достижения <span class="count" id="menu-count">0/26</span></button>
+  <button class="ctl-btn download" id="install-btn" style="display:none">Установить</button>
+  <button class="ctl-btn" id="shuffle-btn">Перемешать</button>
+  <button class="ctl-btn" id="view-btn">Сброс вида</button>
+  <button class="ctl-btn seal" id="reset-game-btn">Заново</button>
+  <button class="ctl-btn" id="exit-btn">В меню</button>
+  <button class="ctl-btn download" id="download-btn">Скачать файл</button>
+</div>
+
+<div id="viewport"><div id="world"></div></div>
+
+<div id="tray">
+  <div id="tray-label">Собранные</div>
+  <div id="tray-slots"></div>
+</div>
+
+<div class="menu-panel" id="menu-panel">
+  <div class="menu-inner">
+    <div class="menu-tabs">
+      <button class="menu-tab active" data-tab="stats">Статистика</button>
+      <button class="menu-tab" data-tab="bronze">Бронза <span class="tab-badge" id="bronze-badge">0/0</span></button>
+      <button class="menu-tab" data-tab="silver">Серебро <span class="tab-badge" id="silver-badge">0/0</span></button>
+      <button class="menu-tab" data-tab="gold">Золото <span class="tab-badge" id="gold-badge">0/0</span></button>
+    </div>
+    <div class="menu-content">
+      <div class="menu-pane active" id="pane-stats">
+        <div class="section-title">Общая статистика</div>
+        <div class="stats-grid" id="stats-grid"></div>
+        <div class="section-title" style="margin-top:18px;">Лучшие результаты</div>
+        <div class="stats-grid" id="stats-best"></div>
+      </div>
+      <div class="menu-pane" id="pane-bronze">
+        <div class="section-title">Бронза — легко <span class="hint" id="hint-bronze"></span></div>
+        <div id="list-bronze"></div>
+      </div>
+      <div class="menu-pane" id="pane-silver">
+        <div class="section-title">Серебро — нормально <span class="hint" id="hint-silver"></span></div>
+        <div id="list-silver"></div>
+      </div>
+      <div class="menu-pane" id="pane-gold">
+        <div class="section-title">Золото — сложно <span class="hint" id="hint-gold"></span></div>
+        <div id="list-gold"></div>
+      </div>
+    </div>
+    <div class="menu-footer">
+      <button class="menu-btn" id="close-menu">Продолжить</button>
+      <button class="menu-btn danger" id="reset-progress-btn">Сбросить прогресс</button>
+    </div>
+  </div>
+</div>
+
+<div class="overlay" id="start-screen">
+  <div class="level-badge" id="start-level-badge">Уровень 1</div>
+  <h1 id="title">ХАХАХА</h1>
+  <p>Собирай по три одинаковые надписи.</p>
+  <p>Нажми на плитку — она уедет в табличку внизу.</p>
+  <p>Три одинаковые исчезнут. Заполнишь табличку — конец.</p>
+  <div class="btn-row">
+    <button class="btn btn-seal" id="start-btn">Начать</button>
+    <button class="btn btn-download" id="install-btn-start" style="display:none">Установить как приложение</button>
+  </div>
+  <div class="offline-hint">
+    <b>Офлайн-версия:</b> нажми <b>«Скачать файл»</b> в панели игры — файл сохранится на устройство и будет работать без интернета.<br>
+    <b>Android / ПК:</b> файл попадёт в «Загрузки» — открой двойным кликом.<br>
+    <b>iPhone / iPad:</b> откроется системное меню — сохрани в «Файлы».
+  </div>
+</div>
+
+<div class="overlay hidden" id="end-screen">
+  <div class="level-badge" id="end-level-badge">Уровень 1</div>
+  <h1 id="end-title">Уровень пройден</h1>
+  <p id="end-subtitle">Все тройки разобраны.</p>
+  <p style="margin-top:14px;" id="end-stats-label">Ходов сделано:</p>
+  <div class="result-score" id="final-moves">0</div>
+  <p id="time-result"></p>
+  <p id="rank" style="color:#8b2019; font-size:14px; margin-top:12px; font-weight:700; letter-spacing:0.08em;"></p>
+  <div class="btn-row">
+    <button class="btn btn-seal" id="next-level-btn">Следующий</button>
+    <button class="btn btn-secondary" id="replay-btn">Повторить</button>
+    <button class="btn btn-secondary" id="back-to-menu-btn">В меню</button>
+  </div>
+</div>
+
+<script>
+// ============================================================
+// БЕЗОПАСНОЕ ХРАНИЛИЩЕ
+// ============================================================
+var storage = (function() {
+  var available = false;
+  try {
+    var t = '__hhh_test__';
+    localStorage.setItem(t, '1');
+    localStorage.removeItem(t);
+    available = true;
+  } catch(e) { available = false; }
+  var memory = {};
+  return {
+    get: function(k) {
+      if (available) { try { return localStorage.getItem(k); } catch(e) { return memory[k] || null; } }
+      return memory[k] || null;
+    },
+    set: function(k, v) {
+      if (available) { try { localStorage.setItem(k, v); return; } catch(e) { memory[k] = v; return; } }
+      memory[k] = v;
+    },
+    remove: function(k) {
+      if (available) { try { localStorage.removeItem(k); return; } catch(e) { delete memory[k]; return; } }
+      delete memory[k];
+    }
+  };
+})();
+
+// ============================================================
+// КОНСТАНТЫ
+// ============================================================
+var MATCH_SIZE = 3;
+var TRAY_SIZE = 9;
+var LEVEL_VARIANTS = [25, 50, 100, 150, 200, 250, 300, 400, 500, 600];
+
+var BASE_TEXTS = [
+  'Хахах','ХАХАХ','Ха-хах','Хахаха','Ахаха','Хаханьки','Хихих','Хо-хо-хо',
+  'Хе-хе','Хихихи','Хах-хах','Хо-хо','Хахахаха','Ахахаха','Хи-хи','Ха-ха',
+  'Хохо','Хе-хе-хе','Хи-хи-хи','Ха-ха-ха','Хихихаха','Хохотание','Хихиканье',
+  'Хи-хи-хи-хи','Хо-хо-хо-хо','Смешинка','Смехотун','Хохотун','Хихиханьки','Хахахахаха'
+];
+
+function generateTexts(count) {
+  var out = [];
+  for (var i = 0; i < count; i++) {
+    var base = BASE_TEXTS[i % BASE_TEXTS.length];
+    var cycle = Math.floor(i / BASE_TEXTS.length);
+    out.push(cycle === 0 ? base : base + ' ' + (cycle + 1));
+  }
+  return out;
+}
+
+function colorFor(i) {
+  var h = (i * 137.508) % 360;
+  var sat = 32 + (i % 4) * 6;
+  var light = 40 + (i % 5) * 5;
+  return {
+    bg: 'hsl(' + h + ',' + sat + '%,' + light + '%)',
+    fg: light < 46 ? '#f0e8d5' : '#241a10',
+    border: 'hsl(' + h + ',' + sat + '%,' + Math.max(15, light - 18) + '%)',
+    shadow: 'hsl(' + h + ',' + sat + '%,' + Math.max(10, light - 26) + '%)'
+  };
+}
+
+// ============================================================
+// КОНФИГ УРОВНЯ — БОЛЕЕ СВОБОДНОЕ РАСПОЛОЖЕНИЕ
+// ============================================================
+function levelConfig(variants) {
+  var total = variants * MATCH_SIZE;
+  var worldSize = Math.max(1400, Math.min(6000, Math.ceil(Math.sqrt(total) * 140)));
+  var fs, pad;
+  if (total <= 75)        { fs = 34; pad = [17, 28]; }
+  else if (total <= 150)  { fs = 28; pad = [15, 24]; }
+  else if (total <= 300)  { fs = 22; pad = [12, 19]; }
+  else if (total <= 500)  { fs = 19; pad = [11, 16]; }
+  else if (total <= 800)  { fs = 17; pad = [10, 14]; }
+  else if (total <= 1200) { fs = 15; pad = [9, 13]; }
+  else if (total <= 1800) { fs = 14; pad = [8, 11]; }
+  else                    { fs = 12; pad = [7, 10]; }
+  return { variants: variants, total: total, worldSize: worldSize, fs: fs, pad: pad };
+}
+
+// ============================================================
+// КЛЮЧИ ХРАНИЛИЩА
+// ============================================================
+var STATS_KEY = 'hhh_stats_v10';
+var ACH_KEY = 'hhh_ach_v10';
+var LEVEL_KEY = 'hhh_level_v10';
+
+var defaultStats = {
+  gamesPlayed: 0, gamesWon: 0, totalPairsFound: 0, totalMoves: 0,
+  bestPairsInGame: 0, bestTime: 0, bestMoves: 0, perfectGamesNoMistakes: 0,
+  rainbowActivated: false, wordUsed: false, titleClicks: 0, shufflesUsed: 0,
+  maxWinStreak: 0, gamesWonWithComeback: 0, highestLevel: 1, maxPairsInLevel: 0
+};
+
+var stats = {};
+(function() {
+  var s = null;
+  try { s = JSON.parse(storage.get(STATS_KEY) || 'null'); } catch(e) {}
+  for (var k in defaultStats) stats[k] = defaultStats[k];
+  if (s) for (var k2 in s) stats[k2] = s[k2];
+})();
+function saveStats() { try { storage.set(STATS_KEY, JSON.stringify(stats)); } catch(e) {} }
+
+var unlockedAch = {};
+(function() {
+  try {
+    var a = JSON.parse(storage.get(ACH_KEY) || '[]');
+    a.forEach(function(id) { unlockedAch[id] = true; });
+  } catch(e) {}
+})();
+function saveAch() { try { storage.set(ACH_KEY, JSON.stringify(Object.keys(unlockedAch))); } catch(e) {} }
+
+var currentLevel = 1;
+(function() {
+  var l = parseInt(storage.get(LEVEL_KEY) || '1', 10);
+  if (l > 0 && l <= LEVEL_VARIANTS.length) currentLevel = l;
+})();
+function saveLevel() { try { storage.set(LEVEL_KEY, String(currentLevel)); } catch(e) {} }
+
+// ============================================================
+// ДОСТИЖЕНИЯ
+// ============================================================
+var RARITY_NAME = { bronze: 'Бронза', silver: 'Серебро', gold: 'Золото' };
+
+var SHOW_NAME_ONLY = { suhariki: true, gazirovka: true };
+
+var ACHIEVEMENTS = [
+  { id: 'first_game', rarity: 'bronze', hidden: false, name: 'Первая игра', desc: 'Начни первую игру', check: function(s) { return s.gamesPlayed >= 1; } },
+  { id: 'first_match', rarity: 'bronze', hidden: false, name: 'Первая тройка', desc: 'Собери первую тройку', check: function(s) { return s.totalPairsFound >= 1; } },
+  { id: 'winner', rarity: 'bronze', hidden: false, name: 'Победитель', desc: 'Пройди любой уровень', check: function(s) { return s.gamesWon >= 1; } },
+  { id: 'level_3', rarity: 'bronze', hidden: false, name: 'Упорный', desc: 'Дойди до 3 уровня', check: function(s) { return s.highestLevel >= 3; } },
+  { id: 'shuffler', rarity: 'bronze', hidden: false, name: 'Мешатель', desc: 'Перемешай 5 раз', check: function(s) { return s.shufflesUsed >= 5; } },
+  { id: 'laugh_king', rarity: 'bronze', hidden: false, name: 'Сто троек', desc: 'Собери 100 троек', check: function(s) { return s.totalPairsFound >= 100; } },
+  { id: 'title_secret', rarity: 'bronze', hidden: true, name: 'Терпеливый', desc: 'Кликни 7 раз по заголовку', check: function(s) { return s.titleClicks >= 7; } },
+  { id: 'word_secret', rarity: 'bronze', hidden: true, name: 'Слово силы', desc: 'Набери «хахаха»', check: function(s) { return s.wordUsed === true; } },
+  { id: 'suhariki', rarity: 'bronze', hidden: true, name: 'Сухарики тут:', desc: 'Они у мамы в комнате за телевизором.', check: function(s) { return s.highestLevel >= 3; } },
+  { id: 'gazirovka', rarity: 'bronze', hidden: true, name: 'Газировка тут:', desc: 'Она находится у мамы на балконе в шкафу.', check: function(s) { return s.highestLevel >= 3; } },
+
+  { id: 'under_180', rarity: 'silver', hidden: false, name: 'Быстрый', desc: 'Пройди за 3 минуты', check: function(s) { return s.bestTime > 0 && s.bestTime <= 180; } },
+  { id: 'under_90', rarity: 'silver', hidden: false, name: 'Очень быстрый', desc: 'Пройди за 90 секунд', check: function(s) { return s.bestTime > 0 && s.bestTime <= 90; } },
+  { id: 'veteran', rarity: 'silver', hidden: false, name: 'Ветеран', desc: 'Сыграй 10 игр', check: function(s) { return s.gamesPlayed >= 10; } },
+  { id: 'master', rarity: 'silver', hidden: false, name: 'Мастер', desc: 'Выиграй 5 уровней', check: function(s) { return s.gamesWon >= 5; } },
+  { id: 'level_5', rarity: 'silver', hidden: false, name: 'Опытный', desc: 'Дойди до 5 уровня', check: function(s) { return s.highestLevel >= 5; } },
+  { id: 'clicker', rarity: 'silver', hidden: false, name: 'Кликер', desc: 'Сделай 2000 ходов', check: function(s) { return s.totalMoves >= 2000; } },
+  { id: 'konami', rarity: 'silver', hidden: true, name: 'Радужный режим', desc: 'Код Konami: ↑↑↓↓←→←→BA', check: function(s) { return s.rainbowActivated === true; } },
+  { id: 'combo_master', rarity: 'silver', hidden: true, name: 'В ударе', desc: '5 троек подряд без ошибок', check: function(s) { return s.maxWinStreak >= 5; } },
+
+  { id: 'level_7', rarity: 'gold', hidden: false, name: 'Легенда', desc: 'Дойди до 7 уровня', check: function(s) { return s.highestLevel >= 7; } },
+  { id: 'no_mistakes', rarity: 'gold', hidden: false, name: 'Безупречно', desc: 'Пройди без лишних ходов', check: function(s) { return s.perfectGamesNoMistakes >= 1; } },
+  { id: 'speed_light', rarity: 'gold', hidden: false, name: 'Скорость света', desc: 'Пройди за 60 секунд', check: function(s) { return s.bestTime > 0 && s.bestTime <= 60; } },
+  { id: 'level_9', rarity: 'gold', hidden: false, name: 'Неудержимый', desc: 'Дойди до 9 уровня', check: function(s) { return s.highestLevel >= 9; } },
+  { id: 'hunter', rarity: 'gold', hidden: true, name: 'Секретоискатель', desc: 'Найди 3 скрытых', check: function() { return countHidden() >= 3; } },
+  { id: 'knowall', rarity: 'gold', hidden: true, name: 'Всезнайка', desc: 'Найди все скрытые', check: function() { return countHidden() >= HIDDEN_TOTAL; } },
+  { id: 'comeback', rarity: 'gold', hidden: true, name: 'Камбэк', desc: 'Выиграй, когда табличка полна', check: function(s) { return s.gamesWonWithComeback >= 1; } },
+  { id: 'perfectionist', rarity: 'gold', hidden: true, name: 'Совершенство', desc: 'Пройди без лишних 3 раза', check: function(s) { return s.perfectGamesNoMistakes >= 3; } }
+];
+var HIDDEN_TOTAL = ACHIEVEMENTS.filter(function(a) { return a.hidden; }).length;
+function countHidden() {
+  return ACHIEVEMENTS.filter(function(a) { return a.hidden && unlockedAch[a.id]; }).length;
+}
+
+// ============================================================
+// DOM
+// ============================================================
+function $(id) { return document.getElementById(id); }
+var viewportEl = $('viewport');
+var worldEl = $('world');
+var trayEl = $('tray');
+var traySlotsEl = $('tray-slots');
+var hudEl = $('hud');
+var controlsEl = $('controls');
+var progressFill = $('level-progress-fill');
+var levelProgressEl = $('level-progress');
+var levelDisplayEl = $('level-display');
+var pairsEl = $('pairs');
+var movesEl = $('moves');
+var timeEl = $('time');
+var startScreen = $('start-screen');
+var endScreen = $('end-screen');
+var endLevelBadge = $('end-level-badge');
+var startLevelBadge = $('start-level-badge');
+var endTitle = $('end-title');
+var endSubtitle = $('end-subtitle');
+var endStatsLabel = $('end-stats-label');
+var finalMovesEl = $('final-moves');
+var timeResultEl = $('time-result');
+var rankEl = $('rank');
+var titleEl = $('title');
+var menuPanel = $('menu-panel');
+var menuCount = $('menu-count');
+var statsGrid = $('stats-grid');
+var statsBest = $('stats-best');
+
+// ============================================================
+// СОСТОЯНИЕ
+// ============================================================
+var worldW = 1400, worldH = 1400, worldCX = 700, worldCY = 700, pileRadius = 700;
+var tiles = [];
+var trayList = [];
+var matchesFound = 0;
+var moves = 0;
+var totalVariants = 25;
+var playing = false;
+var startTime = 0;
+var timeInterval = null;
+var rainbowMode = false;
+var currentWinStreak = 0;
+var maxTrayUsedThisGame = 0;
+var processingMatches = false;
+var currentConfig = null;
+var rafPending = false;
+
+var camera = { x: 0, y: 0, zoom: 1 };
+var isPanning = false;
+var panStart = null;
+var touchState = null;
+
+// ============================================================
+// КАМЕРА
+// ============================================================
+function applyCamera() {
+  var W = window.innerWidth, H = window.innerHeight;
+  var tx = W / 2 - camera.x * camera.zoom;
+  var ty = H / 2 - camera.y * camera.zoom;
+  worldEl.style.transform = 'translate3d(' + tx + 'px,' + ty + 'px,0) scale(' + camera.zoom + ')';
+}
+function resetCamera() {
+  camera.x = worldCX; camera.y = worldCY;
+  var W = window.innerWidth, H = window.innerHeight;
+  var zx = (W * 0.92) / worldW;
+  var zy = (H * 0.68) / worldH;
+  camera.zoom = Math.max(0.15, Math.min(1.6, Math.min(zx, zy)));
+  applyCamera();
+}
+function zoomAt(sx, sy, factor) {
+  var W = window.innerWidth, H = window.innerHeight;
+  var wx = camera.x + (sx - W / 2) / camera.zoom;
+  var wy = camera.y + (sy - H / 2) / camera.zoom;
+  var nz = Math.max(0.15, Math.min(4, camera.zoom * factor));
+  camera.x = wx - (sx - W / 2) / nz;
+  camera.y = wy - (sy - H / 2) / nz;
+  camera.zoom = nz;
+  applyCamera();
+}
+
+// ============================================================
+// СОБЫТИЯ МЫШИ И КАСАНИЙ
+// ============================================================
+viewportEl.addEventListener('mousedown', function(e) {
+  if (e.button !== 0 && e.button !== 1) return;
+  if (e.target.closest('.tile')) return;
+  isPanning = true;
+  panStart = { x: e.clientX, y: e.clientY, camX: camera.x, camY: camera.y };
+  viewportEl.classList.add('dragging');
+  e.preventDefault();
+});
+document.addEventListener('mousemove', function(e) {
+  if (!isPanning) return;
+  camera.x = panStart.camX - (e.clientX - panStart.x) / camera.zoom;
+  camera.y = panStart.camY - (e.clientY - panStart.y) / camera.zoom;
+  applyCamera();
+});
+document.addEventListener('mouseup', function() {
+  if (isPanning) {
+    isPanning = false;
+    viewportEl.classList.remove('dragging');
+    if (playing) scheduleAccessibility();
+  }
+});
+viewportEl.addEventListener('wheel', function(e) {
+  e.preventDefault();
+  zoomAt(e.clientX, e.clientY, e.deltaY > 0 ? 0.88 : 1.14);
+}, { passive: false });
+
+viewportEl.addEventListener('touchstart', function(e) {
+  if (e.touches.length === 1) {
+    var t = e.touches[0];
+    var el = document.elementFromPoint(t.clientX, t.clientY);
+    if (el && el.closest('.tile')) return;
+    touchState = { type: 'pan', startX: t.clientX, startY: t.clientY, startCamX: camera.x, startCamY: camera.y };
+  } else if (e.touches.length === 2) {
+    var a = e.touches[0], b = e.touches[1];
+    var dist = Math.hypot(a.clientX - b.clientX, a.clientY - b.clientY);
+    touchState = {
+      type: 'pinch', startDist: dist, startZoom: camera.zoom,
+      centerX: (a.clientX + b.clientX) / 2, centerY: (a.clientY + b.clientY) / 2,
+      startCamX: camera.x, startCamY: camera.y
+    };
+    e.preventDefault();
+  }
+}, { passive: false });
+
+viewportEl.addEventListener('touchmove', function(e) {
+  if (!touchState) return;
+  if (touchState.type === 'pan' && e.touches.length === 1) {
+    var t = e.touches[0];
+    camera.x = touchState.startCamX - (t.clientX - touchState.startX) / camera.zoom;
+    camera.y = touchState.startCamY - (t.clientY - touchState.startY) / camera.zoom;
+    applyCamera();
+    e.preventDefault();
+  } else if (touchState.type === 'pinch' && e.touches.length === 2) {
+    var a = e.touches[0], b = e.touches[1];
+    var dist = Math.hypot(a.clientX - b.clientX, a.clientY - b.clientY);
+    var nz = Math.max(0.15, Math.min(4, touchState.startZoom * (dist / touchState.startDist)));
+    var W = window.innerWidth, H = window.innerHeight;
+    var sx = touchState.centerX, sy = touchState.centerY;
+    var wx = touchState.startCamX + (sx - W / 2) / touchState.startZoom;
+    var wy = touchState.startCamY + (sy - H / 2) / touchState.startZoom;
+    camera.x = wx - (sx - W / 2) / nz;
+    camera.y = wy - (sy - H / 2) / nz;
+    camera.zoom = nz;
+    applyCamera();
+    e.preventDefault();
+  }
+}, { passive: false });
+
+viewportEl.addEventListener('touchend', function(e) {
+  if (e.touches.length === 0) {
+    if (touchState && touchState.type === 'pinch' && playing) scheduleAccessibility();
+    touchState = null;
+  }
+});
+
+window.addEventListener('resize', function() {
+  applyCamera();
+  if (playing) scheduleAccessibility();
+});
+
+// ============================================================
+// ТАБЛИЧКА
+// ============================================================
+var slotEls = [];
+function buildTraySlots() {
+  traySlotsEl.innerHTML = '';
+  slotEls.length = 0;
+  var frag = document.createDocumentFragment();
+  for (var i = 0; i < TRAY_SIZE; i++) {
+    var s = document.createElement('div');
+    s.className = 'slot';
+    frag.appendChild(s);
+    slotEls.push(s);
+  }
+  traySlotsEl.appendChild(frag);
+}
+
+function renderTray() {
+  for (var i = 0; i < TRAY_SIZE; i++) {
+    slotEls[i].innerHTML = '';
+    slotEls[i].classList.remove('filled');
+  }
+
+  var visibleCounts = {};
+  trayList.forEach(function(t) {
+    if (t.pending) return;
+    visibleCounts[t.variantIndex] = (visibleCounts[t.variantIndex] || 0) + 1;
+  });
+
+  var idx = 0;
+  trayList.forEach(function(tile) {
+    if (tile.pending) return;
+    if (idx >= TRAY_SIZE) return;
+
+    var slot = slotEls[idx];
+    slot.classList.add('filled');
+
+    var el = document.createElement('div');
+    el.className = 'tray-tile';
+    el.textContent = tile.text;
+    el.style.setProperty('--bg', tile.color.bg);
+    el.style.setProperty('--fg', tile.color.fg);
+    el.style.setProperty('--border', tile.color.border);
+    el.style.setProperty('--shadow', tile.color.shadow);
+
+    var cnt = visibleCounts[tile.variantIndex] || 0;
+    if (cnt >= 2 && cnt < MATCH_SIZE) {
+      el.classList.add('has-two');
+      var badge = document.createElement('div');
+      badge.className = 'tray-counter';
+      badge.textContent = cnt + '/' + MATCH_SIZE;
+      el.appendChild(badge);
+    }
+
+    slot.appendChild(el);
+    idx++;
+  });
+
+  trayEl.classList.toggle('warning', trayList.length >= TRAY_SIZE - 1);
+}
+
+// ============================================================
+// ПОЛЕ — БОЛЕЕ СВОБОДНОЕ РАСПОЛОЖЕНИЕ
+// ============================================================
+function measureTile(text, fs, padX, padY) {
+  var w = Math.ceil(text.length * fs * 0.6) + padX * 2 + 6;
+  var h = Math.ceil(fs * 1.4) + padY * 2 + 6;
+  return { w: w, h: h };
+}
+
+function buildBoard() {
+  worldEl.innerHTML = '';
+  tiles = [];
+  trayList = [];
+  matchesFound = 0;
+  moves = 0;
+  currentWinStreak = 0;
+  maxTrayUsedThisGame = 0;
+  processingMatches = false;
+
+  currentConfig = levelConfig(LEVEL_VARIANTS[currentLevel - 1]);
+  totalVariants = currentConfig.variants;
+
+  worldW = worldH = currentConfig.worldSize;
+  worldCX = worldCY = worldW / 2;
+  // БОЛЕЕ СВОБОДНОЕ РАСПОЛОЖЕНИЕ — 0.5 вместо 0.42
+  pileRadius = worldW * 0.5;
+
+  worldEl.style.width = worldW + 'px';
+  worldEl.style.height = worldH + 'px';
+
+  pairsEl.textContent = '0/' + totalVariants;
+  movesEl.textContent = '0';
+  levelDisplayEl.textContent = String(currentLevel);
+  progressFill.style.width = '0%';
+
+  var texts = generateTexts(totalVariants);
+  var variants = [];
+  for (var i = 0; i < totalVariants; i++) {
+    var v = { text: texts[i], color: colorFor(i), variantIndex: i };
+    var size = measureTile(v.text, currentConfig.fs, currentConfig.pad[1], currentConfig.pad[0]);
+    v.w = size.w;
+    v.h = size.h;
+    variants.push(v);
+  }
+
+  var values = [];
+  variants.forEach(function(v) {
+    for (var k = 0; k < MATCH_SIZE; k++) values.push(v);
+  });
+
+  for (var i2 = values.length - 1; i2 > 0; i2--) {
+    var j = Math.floor(Math.random() * (i2 + 1));
+    var tmp = values[i2]; values[i2] = values[j]; values[j] = tmp;
+  }
+
+  var zs = [];
+  for (var i3 = 1; i3 <= values.length; i3++) zs.push(i3);
+  for (var i4 = zs.length - 1; i4 > 0; i4--) {
+    var j4 = Math.floor(Math.random() * (i4 + 1));
+    var t4 = zs[i4]; zs[i4] = zs[j4]; zs[j4] = t4;
+  }
+
+  for (var i5 = 0; i5 < values.length; i5++) {
+    var angle = Math.random() * Math.PI * 2;
+    var r = Math.sqrt(Math.random()) * pileRadius;
+    var x = worldCX + Math.cos(angle) * r;
+    var y = worldCY + Math.sin(angle) * r * 0.94;
+    tiles.push({
+      id: i5,
+      text: values[i5].text,
+      color: values[i5].color,
+      variantIndex: values[i5].variantIndex,
+      w: values[i5].w,
+      h: values[i5].h,
+      x: x, y: y,
+      z: zs[i5],
+      rot: (Math.random() - 0.5) * 6,
+      state: 'world',
+      blocked: false,
+      el: null,
+      pending: false
+    });
+  }
+
+  var cfg = currentConfig;
+  var frag = document.createDocumentFragment();
+  tiles.forEach(function(t) {
+    var el = document.createElement('div');
+    el.className = 'tile';
+    el.textContent = t.text;
+    el.style.left = t.x + 'px';
+    el.style.top = t.y + 'px';
+    el.style.zIndex = t.z;
+    el.style.setProperty('--bg', t.color.bg);
+    el.style.setProperty('--fg', t.color.fg);
+    el.style.setProperty('--border', t.color.border);
+    el.style.setProperty('--shadow', t.color.shadow);
+    el.style.setProperty('--rot', t.rot + 'deg');
+    el.style.setProperty('--fs', cfg.fs + 'px');
+    el.style.setProperty('--pad-y', cfg.pad[0] + 'px');
+    el.style.setProperty('--pad-x', cfg.pad[1] + 'px');
+    el.addEventListener('click', function(e) { e.stopPropagation(); onTileClick(t); });
+    el.addEventListener('touchstart', function(e) { e.stopPropagation(); }, { passive: true });
+    frag.appendChild(el);
+    t.el = el;
+  });
+  worldEl.appendChild(frag);
+
+  renderTray();
+  scheduleAccessibility();
+}
+
+// ============================================================
+// ДОСТУПНОСТЬ ПЛИТОК
+// ============================================================
+var CELL_SIZE = 220;
+
+function updateAccessibility() {
+  rafPending = false;
+  var grid = {};
+  for (var i = 0; i < tiles.length; i++) {
+    var t = tiles[i];
+    if (t.state !== 'world') continue;
+    var gx = Math.floor(t.x / CELL_SIZE);
+    var gy = Math.floor(t.y / CELL_SIZE);
+    var key = gx + ',' + gy;
+    if (!grid[key]) grid[key] = [];
+    grid[key].push(t);
+  }
+
+  for (var i2 = 0; i2 < tiles.length; i2++) {
+    var t2 = tiles[i2];
+    if (t2.state !== 'world') continue;
+
+    var gx2 = Math.floor(t2.x / CELL_SIZE);
+    var gy2 = Math.floor(t2.y / CELL_SIZE);
+    var blocked = false;
+
+    outer:
+    for (var dx = -1; dx <= 1; dx++) {
+      for (var dy = -1; dy <= 1; dy++) {
+        var bucket = grid[(gx2 + dx) + ',' + (gy2 + dy)];
+        if (!bucket) continue;
+        for (var k = 0; k < bucket.length; k++) {
+          var other = bucket[k];
+          if (other === t2 || other.z <= t2.z) continue;
+          if (Math.abs(t2.x - other.x) < other.w / 2 && Math.abs(t2.y - other.y) < other.h / 2) {
+            blocked = true;
+            break outer;
+          }
+        }
+      }
+    }
+
+    if (t2.blocked !== blocked) {
+      t2.blocked = blocked;
+      if (t2.el) t2.el.classList.toggle('blocked', blocked);
+    }
+  }
+}
+
+function scheduleAccessibility() {
+  if (rafPending) return;
+  rafPending = true;
+  requestAnimationFrame(updateAccessibility);
+}
+
+// ============================================================
+// КЛИК ПО ПЛИТКЕ
+// ============================================================
+function onTileClick(tile) {
+  if (!playing || tile.state !== 'world') return;
+  if (tile.blocked) {
+    if (tile.el) {
+      tile.el.classList.add('shake');
+      setTimeout(function() { if (tile.el) tile.el.classList.remove('shake'); }, 360);
+    }
+    return;
+  }
+  if (trayList.length >= TRAY_SIZE) return;
+  if (processingMatches) return;
+
+  var slotIndex = trayList.length;
+  var el = tile.el;
+  if (!el) return;
+
+  tile.state = 'flying';
+  tile.pending = true;
+  trayList.push(tile);
+
+  moves++;
+  movesEl.textContent = moves;
+  stats.totalMoves++;
+  saveStats();
+
+  renderTray();
+
+  var rect = el.getBoundingClientRect();
+  var slotRect = slotEls[slotIndex].getBoundingClientRect();
+
+  var ghost = document.createElement('div');
+  ghost.className = 'ghost';
+  ghost.textContent = tile.text;
+  ghost.style.left = rect.left + 'px';
+  ghost.style.top = rect.top + 'px';
+  ghost.style.width = rect.width + 'px';
+  ghost.style.height = rect.height + 'px';
+  ghost.style.fontSize = currentConfig.fs + 'px';
+  ghost.style.setProperty('--bg', tile.color.bg);
+  ghost.style.setProperty('--fg', tile.color.fg);
+  ghost.style.setProperty('--border', tile.color.border);
+  ghost.style.setProperty('--shadow', tile.color.shadow);
+  document.body.appendChild(ghost);
+
+  el.parentNode.removeChild(el);
+  tile.el = null;
+
+  ghost.getBoundingClientRect();
+  requestAnimationFrame(function() {
+    ghost.style.left = slotRect.left + 'px';
+    ghost.style.top = slotRect.top + 'px';
+    ghost.style.width = slotRect.width + 'px';
+    ghost.style.height = slotRect.height + 'px';
+    ghost.style.fontSize = '11px';
+  });
+
+  setTimeout(function() {
+    if (ghost.parentNode) ghost.parentNode.removeChild(ghost);
+    tile.pending = false;
+    tile.state = 'tray';
+    renderTray();
+    setTimeout(function() {
+      processMatches();
+      scheduleAccessibility();
+    }, 60);
+  }, 520);
+}
+
+// ============================================================
+// ПОИСК ТРОЕК
+// ============================================================
+function processMatches() {
+  if (processingMatches) return;
+
+  var counts = {};
+  trayList.forEach(function(t) {
+    if (t.pending) return;
+    counts[t.variantIndex] = (counts[t.variantIndex] || 0) + 1;
+  });
+
+  var matchVariant = null;
+  for (var v in counts) {
+    if (counts[v] >= MATCH_SIZE) { matchVariant = parseInt(v, 10); break; }
+  }
+
+  if (matchVariant !== null) {
+    processingMatches = true;
+    var candidates = trayList.filter(function(t) { return t.variantIndex === matchVariant && !t.pending; });
+    var toRemove = candidates.slice(0, MATCH_SIZE);
+
+    toRemove.forEach(function(t) {
+      var i = trayList.indexOf(t);
+      if (i >= 0 && i < TRAY_SIZE) {
+        var el = slotEls[i].querySelector('.tray-tile');
+        if (el) el.classList.add('matching');
+      }
+    });
+
+    matchesFound++;
+    pairsEl.textContent = matchesFound + '/' + totalVariants;
+    progressFill.style.width = (matchesFound / totalVariants * 100) + '%';
+
+    stats.totalPairsFound++;
+    if (matchesFound > stats.bestPairsInGame) stats.bestPairsInGame = matchesFound;
+    currentWinStreak++;
+    if (currentWinStreak > stats.maxWinStreak) stats.maxWinStreak = currentWinStreak;
+    saveStats();
+
+    toRemove.forEach(function(t) { t.state = 'matched'; });
+
+    setTimeout(function() {
+      trayList = trayList.filter(function(t) { return toRemove.indexOf(t) < 0; });
+      renderTray();
+      processingMatches = false;
+      if (matchesFound >= totalVariants) checkWin();
+      else setTimeout(processMatches, 130);
+    }, 540);
+  } else {
+    if (trayList.filter(function(t) { return !t.pending; }).length >= TRAY_SIZE) {
+      setTimeout(gameOver, 300);
+    }
+  }
+
+  checkAchievements();
+}
+
+// ============================================================
+// ПОБЕДА / ПРОИГРЫШ
+// ============================================================
+function checkWin() {
+  if (matchesFound < totalVariants || !playing) return;
+  playing = false;
+  clearInterval(timeInterval);
+
+  var elapsed = Math.floor((Date.now() - startTime) / 1000);
+  var timeStr = Math.floor(elapsed / 60) + ':' + String(elapsed % 60).padStart(2, '0');
+
+  endLevelBadge.textContent = 'Уровень ' + currentLevel;
+  endTitle.textContent = 'Уровень пройден';
+  endSubtitle.textContent = 'Все ' + totalVariants + ' троек разобраны.';
+  endStatsLabel.textContent = 'Ходов сделано:';
+  finalMovesEl.textContent = moves;
+  timeResultEl.textContent = 'Время: ' + timeStr;
+
+  var minMoves = totalVariants * MATCH_SIZE;
+  var rank = 'Хороший результат';
+  if (moves === minMoves) rank = 'Идеально';
+  else if (moves <= minMoves + 5) rank = 'Почти идеально';
+  else if (moves <= minMoves + 20) rank = 'Отлично';
+  else if (moves <= minMoves + 50) rank = 'Неплохо';
+  rankEl.textContent = rank;
+
+  stats.gamesWon++;
+  if (stats.bestTime === 0 || elapsed < stats.bestTime) stats.bestTime = elapsed;
+  if (stats.bestMoves === 0 || moves < stats.bestMoves) stats.bestMoves = moves;
+  if (moves === minMoves) stats.perfectGamesNoMistakes++;
+  if (maxTrayUsedThisGame >= TRAY_SIZE - 1) stats.gamesWonWithComeback++;
+  if (totalVariants > stats.maxPairsInLevel) stats.maxPairsInLevel = totalVariants;
+  saveStats();
+
+  if (currentLevel < LEVEL_VARIANTS.length) {
+    var next = currentLevel + 1;
+    if (next > stats.highestLevel) { stats.highestLevel = next; saveStats(); }
+  }
+
+  checkAchievements();
+  $('next-level-btn').style.display = currentLevel >= LEVEL_VARIANTS.length ? 'none' : '';
+  setTimeout(function() { endScreen.classList.remove('hidden'); }, 400);
+}
+
+function gameOver() {
+  if (!playing) return;
+  playing = false;
+  clearInterval(timeInterval);
+
+  var elapsed = Math.floor((Date.now() - startTime) / 1000);
+  var timeStr = Math.floor(elapsed / 60) + ':' + String(elapsed % 60).padStart(2, '0');
+
+  endLevelBadge.textContent = 'Уровень ' + currentLevel;
+  endTitle.textContent = 'Табличка полна';
+  endSubtitle.textContent = 'Больше некуда класть плитки.';
+  endStatsLabel.textContent = 'Троек собрано:';
+  finalMovesEl.textContent = matchesFound + ' / ' + totalVariants;
+  timeResultEl.textContent = 'За ' + timeStr;
+
+  var ratio = matchesFound / totalVariants;
+  var rank = 'Попробуй ещё раз';
+  if (ratio >= 0.85) rank = 'Совсем чуть-чуть не хватило';
+  else if (ratio >= 0.6) rank = 'Хорошая попытка';
+  rankEl.textContent = rank;
+
+  if (matchesFound > stats.bestPairsInGame) stats.bestPairsInGame = matchesFound;
+  saveStats();
+  checkAchievements();
+
+  $('next-level-btn').style.display = 'none';
+  setTimeout(function() { endScreen.classList.remove('hidden'); }, 400);
+}
+
+// ============================================================
+// СТАРТ ИГРЫ
+// ============================================================
+function startGame() {
+  startScreen.classList.add('hidden');
+  endScreen.classList.add('hidden');
+  menuPanel.classList.remove('open');
+
+  buildBoard();
+  resetCamera();
+  playing = true;
+  startTime = Date.now();
+  timeEl.textContent = '0:00';
+
+  stats.gamesPlayed++;
+  saveStats();
+  checkAchievements();
+
+  clearInterval(timeInterval);
+  timeInterval = setInterval(function() {
+    var elapsed = Math.floor((Date.now() - startTime) / 1000);
+    timeEl.textContent = Math.floor(elapsed / 60) + ':' + String(elapsed % 60).padStart(2, '0');
+  }, 1000);
+
+  saveLevel();
+}
+
+function returnToMenu() {
+  playing = false;
+  clearInterval(timeInterval);
+  isPanning = false;
+  touchState = null;
+  viewportEl.classList.remove('dragging');
+
+  endScreen.classList.add('hidden');
+  menuPanel.classList.remove('open');
+
+  startLevelBadge.textContent = 'Уровень ' + currentLevel + ' · ' + LEVEL_VARIANTS[currentLevel - 1] + ' надписей';
+  startScreen.classList.remove('hidden');
+
+  worldEl.innerHTML = '';
+  tiles = [];
+  trayList = [];
+  renderTray();
+  updateCounters();
+}
+
+function nextLevel() {
+  if (currentLevel >= LEVEL_VARIANTS.length) return;
+  currentLevel++;
+  saveLevel();
+  endScreen.classList.add('hidden');
+  startGame();
+}
+
+function resetCurrentGame() {
+  if (!confirm('Начать уровень заново?')) return;
+  clearInterval(timeInterval);
+  playing = false;
+  worldEl.innerHTML = '';
+  tiles = [];
+  trayList = [];
+  renderTray();
+  resetCamera();
+  setTimeout(startGame, 100);
+}
+
+function reshuffle() {
+  if (!playing) return;
+  var active = tiles.filter(function(t) { return t.state === 'world'; });
+  if (active.length < 2) return;
+
+  var zs = [];
+  for (var i = 1; i <= active.length; i++) zs.push(i);
+  for (var i2 = zs.length - 1; i2 > 0; i2--) {
+    var j = Math.floor(Math.random() * (i2 + 1));
+    var t = zs[i2]; zs[i2] = zs[j]; zs[j] = t;
+  }
+
+  active.forEach(function(tile, i) {
+    var a = Math.random() * Math.PI * 2;
+    var r = Math.sqrt(Math.random()) * pileRadius;
+    tile.x = worldCX + Math.cos(a) * r;
+    tile.y = worldCY + Math.sin(a) * r * 0.94;
+    tile.z = zs[i];
+    if (tile.el) {
+      tile.el.style.left = tile.x + 'px';
+      tile.el.style.top = tile.y + 'px';
+      tile.el.style.zIndex = tile.z;
+    }
+  });
+
+  scheduleAccessibility();
+  showToast('Перемешано');
+  stats.shufflesUsed++;
+  saveStats();
+  checkAchievements();
+}
+
+// ============================================================
+// UI
+// ============================================================
+function showGameUI() {
+  hudEl.style.display = 'flex';
+  levelProgressEl.style.display = 'block';
+  controlsEl.style.display = 'flex';
+  trayEl.style.display = 'flex';
+}
+function hideGameUI() {
+  hudEl.style.display = 'none';
+  levelProgressEl.style.display = 'none';
+  controlsEl.style.display = 'none';
+  trayEl.style.display = 'none';
+}
+
+// ============================================================
+// ТОСТ
+// ============================================================
+var toastEl = null, toastTimer = null;
+function showToast(text) {
+  if (!toastEl) {
+    toastEl = document.createElement('div');
+    toastEl.className = 'toast';
+    document.body.appendChild(toastEl);
+  }
+  toastEl.textContent = text;
+  toastEl.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(function() { toastEl.classList.remove('show'); }, 2200);
+}
+
+// ============================================================
+// POPUP ДОСТИЖЕНИЙ
+// ============================================================
+var achQueue = [];
+var achShowing = false;
+function queueAchievement(ach) {
+  achQueue.push(ach);
+  if (!achShowing) showNextAch();
+}
+function showNextAch() {
+  if (!achQueue.length) { achShowing = false; return; }
+  achShowing = true;
+  var ach = achQueue.shift();
+  var el = document.createElement('div');
+  el.className = 'ach-popup ' + ach.rarity;
+  var isSpecial = (ach.id === 'suhariki' || ach.id === 'gazirovka');
+  if (isSpecial) el.className += ' special';
+  el.style.position = 'fixed';
+  el.innerHTML = '<div><div class="ach-label">' +
+    (isSpecial ? 'Открыт секрет!' : ach.hidden ? 'Секрет раскрыт' : 'Достижение') +
+    '</div>' +
+    '<div class="ach-name">' + ach.name + '</div>' +
+    '<div class="ach-desc">' + ach.desc + '</div></div>';
+  document.body.appendChild(el);
+  requestAnimationFrame(function() { el.classList.add('show'); });
+
+  var duration = isSpecial ? 5000 : 2800;
+  setTimeout(function() {
+    el.classList.remove('show');
+    setTimeout(function() {
+      if (el.parentNode) el.parentNode.removeChild(el);
+      showNextAch();
+    }, 400);
+  }, duration);
+}
+
+// ============================================================
+// ДОСТИЖЕНИЯ
+// ============================================================
+function checkAchievements() {
+  var any = true;
+  while (any) {
+    any = false;
+    ACHIEVEMENTS.forEach(function(a) {
+      if (!unlockedAch[a.id] && a.check(stats)) {
+        unlockedAch[a.id] = true;
+        any = true;
+        queueAchievement(a);
+      }
+    });
+  }
+  saveAch();
+  saveStats();
+  updateCounters();
+  if (menuPanel.classList.contains('open')) { renderStats(); renderAllLists(); }
+}
+
+function updateCounters() {
+  var total = Object.keys(unlockedAch).length;
+  menuCount.textContent = total + '/' + ACHIEVEMENTS.length;
+  var by = { bronze: [0,0,0,0], silver: [0,0,0,0], gold: [0,0,0,0] };
+  ACHIEVEMENTS.forEach(function(a) {
+    by[a.rarity][1]++;
+    if (unlockedAch[a.id]) by[a.rarity][0]++;
+    if (a.hidden) {
+      by[a.rarity][3]++;
+      if (unlockedAch[a.id]) by[a.rarity][2]++;
+    }
+  });
+  $('bronze-badge').textContent = by.bronze[0] + '/' + by.bronze[1];
+  $('silver-badge').textContent = by.silver[0] + '/' + by.silver[1];
+  $('gold-badge').textContent = by.gold[0] + '/' + by.gold[1];
+  $('hint-bronze').textContent = 'Скрытых: ' + by.bronze[2] + '/' + by.bronze[3];
+  $('hint-silver').textContent = 'Скрытых: ' + by.silver[2] + '/' + by.silver[3];
+  $('hint-gold').textContent = 'Скрытых: ' + by.gold[2] + '/' + by.gold[3];
+}
+
+function renderStats() {
+  var main = [
+    { value: stats.gamesPlayed, label: 'Сыграно' },
+    { value: stats.gamesWon, label: 'Побед' },
+    { value: stats.highestLevel, label: 'Макс. уровень' },
+    { value: stats.maxPairsInLevel, label: 'Макс. надписей' },
+    { value: stats.totalPairsFound, label: 'Всего троек' },
+    { value: stats.maxWinStreak, label: 'Лучшая серия' }
+  ];
+  statsGrid.innerHTML = main.map(function(s) {
+    return '<div class="stat-card"><div class="stat-value">' + s.value + '</div><div class="stat-label">' + s.label + '</div></div>';
+  }).join('');
+  var best = [
+    { value: stats.bestTime > 0 ? stats.bestTime + 'с' : '—', label: 'Лучшее время' },
+    { value: stats.bestMoves > 0 ? stats.bestMoves : '—', label: 'Лучшие ходы' },
+    { value: stats.perfectGamesNoMistakes, label: 'Идеальных' },
+    { value: stats.gamesWonWithComeback, label: 'Камбэков' }
+  ];
+  statsBest.innerHTML = best.map(function(s) {
+    return '<div class="stat-card"><div class="stat-value">' + s.value + '</div><div class="stat-label">' + s.label + '</div></div>';
+  }).join('');
+}
+
+function renderRow(a, si) {
+  var u = unlockedAch[a.id];
+  var rn = RARITY_NAME[a.rarity];
+  if (a.hidden && !u) {
+    if (SHOW_NAME_ONLY[a.id]) {
+      return '<div class="item-row hidden-locked">' +
+        '<div class="row-text"><div class="name name-visible">' + a.name + '</div><div class="desc">Условие скрыто. Разблокируй, чтобы узнать.</div></div>' +
+        '<div class="row-side"><span class="rarity-badge ' + a.rarity + '">' + rn + '</span><span class="secret-badge">Секрет</span></div>' +
+      '</div>';
+    }
+    return '<div class="item-row hidden-locked">' +
+      '<div class="row-text"><div class="name">??? #' + si + '</div><div class="desc">Условие скрыто.</div></div>' +
+      '<div class="row-side"><span class="rarity-badge ' + a.rarity + '">' + rn + '</span><span class="secret-badge">Секрет</span></div>' +
+    '</div>';
+  }
+  if (!u) {
+    return '<div class="item-row visible-locked">' +
+      '<div class="row-text"><div class="name">' + a.name + '</div><div class="desc">' + a.desc + '</div></div>' +
+      '<div class="row-side"><span class="rarity-badge ' + a.rarity + '">' + rn + '</span></div>' +
+    '</div>';
+  }
+  return '<div class="item-row unlocked ' + a.rarity + '">' +
+    '<div class="row-text"><div class="name">' + a.name + '</div><div class="desc">' + a.desc + '</div></div>' +
+    '<div class="row-side"><span class="rarity-badge ' + a.rarity + '">' + rn + '</span>' +
+    (a.hidden ? '<span class="secret-badge">Секрет</span>' : '') +
+    '<span class="unlocked-check">Получено</span></div>' +
+  '</div>';
+}
+
+function renderRarityList(r) {
+  var list = ACHIEVEMENTS.filter(function(a) { return a.rarity === r; }).sort(function(a, b) {
+    var ua = unlockedAch[a.id] ? 0 : 1;
+    var ub = unlockedAch[b.id] ? 0 : 1;
+    if (ua !== ub) return ua - ub;
+    return (a.hidden ? 1 : 0) - (b.hidden ? 1 : 0);
+  });
+  var sc = 0;
+  document.getElementById('list-' + r).innerHTML = list.map(function(a) {
+    if (a.hidden && !unlockedAch[a.id]) { sc++; return renderRow(a, sc); }
+    return renderRow(a);
+  }).join('');
+}
+
+function renderAllLists() {
+  ['bronze','silver','gold'].forEach(renderRarityList);
+}
+
+// ============================================================
+// МЕНЮ
+// ============================================================
+function openMenu() {
+  renderStats();
+  renderAllLists();
+  updateCounters();
+  menuPanel.classList.add('open');
+}
+
+$('menu-btn').addEventListener('click', openMenu);
+$('close-menu').addEventListener('click', function() { menuPanel.classList.remove('open'); });
+menuPanel.addEventListener('click', function(e) { if (e.target === menuPanel) menuPanel.classList.remove('open'); });
+document.querySelectorAll('.menu-tab').forEach(function(tab) {
+  tab.addEventListener('click', function() {
+    document.querySelectorAll('.menu-tab').forEach(function(t) { t.classList.remove('active'); });
+    tab.classList.add('active');
+    document.querySelectorAll('.menu-pane').forEach(function(p) { p.classList.remove('active'); });
+    document.getElementById('pane-' + tab.dataset.tab).classList.add('active');
+  });
+});
+$('reset-progress-btn').addEventListener('click', function() {
+  if (!confirm('Сбросить весь прогресс?')) return;
+  unlockedAch = {};
+  for (var k in defaultStats) stats[k] = defaultStats[k];
+  currentLevel = 1;
+  saveAch(); saveStats(); saveLevel();
+  updateCounters(); renderStats(); renderAllLists();
+  showToast('Прогресс сброшен');
+});
+
+// ============================================================
+// СКАЧИВАНИЕ ОФЛАЙН-ФАЙЛА
+// ============================================================
+function buildOfflineHTML() {
+  var clone = document.documentElement.cloneNode(true);
+  var w = clone.querySelector('#world'); if (w) w.innerHTML = '';
+  var ts = clone.querySelector('#tray-slots'); if (ts) ts.innerHTML = '';
+
+  clone.querySelectorAll('.ghost, .toast, .ach-popup, .tile, .slot').forEach(function(el) { el.remove(); });
+
+  ['#hud', '#controls', '#tray', '#level-progress'].forEach(function(sel) {
+    var el = clone.querySelector(sel);
+    if (el) el.style.display = '';
+  });
+
+  var ss = clone.querySelector('#start-screen'); if (ss) ss.classList.remove('hidden');
+  var es = clone.querySelector('#end-screen'); if (es) es.classList.add('hidden');
+  var mp = clone.querySelector('#menu-panel'); if (mp) mp.classList.remove('open');
+
+  return '<!DOCTYPE html>\n' + clone.outerHTML;
+}
+
+function downloadOffline() {
+  var ua = navigator.userAgent;
+  var isIOS = /iPad|iPhone|iPod/.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+  var isAndroid = /Android/i.test(ua);
+
+  var html;
+  try { html = buildOfflineHTML(); }
+  catch(e) { showToast('Ошибка сборки'); return; }
+
+  var filename = 'hahaha.html';
+  var blob = new Blob([html], { type: 'text/html;charset=utf-8' });
+
+  if (navigator.share && navigator.canShare && (isIOS || isAndroid)) {
+    try {
+      var file = new File([blob], filename, { type: 'text/html' });
+      if (navigator.canShare({ files: [file] })) {
+        navigator.share({ files: [file], title: 'ХАХАХА', text: 'Игра ХАХАХА' })
+          .then(function() { showToast('Файл сохранён'); })
+          .catch(function(err) {
+            if (err && err.name !== 'AbortError') legacyDownload(blob, filename, isIOS);
+          });
+        return;
+      }
+    } catch(e) {}
+  }
+
+  legacyDownload(blob, filename, isIOS);
+}
+
+function legacyDownload(blob, filename, isIOS) {
+  if (isIOS) {
+    var url = URL.createObjectURL(blob);
+    var win = window.open(url, '_blank');
+    if (win) {
+      setTimeout(function() { URL.revokeObjectURL(url); }, 60000);
+      showToast('Открой меню Поделиться и сохрани в Файлы');
+      return;
+    }
+    try {
+      var reader = new FileReader();
+      reader.onload = function() {
+        var win2 = window.open();
+        if (win2) {
+          win2.document.write('<html><head><title>ХАХАХА</title></head><body style="margin:0;padding:20px;font-family:Arial;background:#ece2cd;color:#26201a;text-align:center;">');
+          win2.document.write('<h2>Файл готов</h2><p style="margin:16px 0;">Нажми кнопку ниже:</p>');
+          win2.document.write('<a href="' + reader.result + '" download="' + filename + '" style="display:inline-block;padding:14px 32px;background:#26201a;color:#ece2cd;text-decoration:none;font-weight:700;">Скачать</a>');
+          win2.document.write('</body></html>');
+          win2.document.close();
+        }
+      };
+      reader.readAsDataURL(blob);
+    } catch(e) { showToast('Не удалось'); }
+    return;
+  }
+
+  try {
+    var url2 = URL.createObjectURL(blob);
+    var a = document.createElement('a');
+    a.href = url2;
+    a.download = filename;
+    a.style.display = 'none';
+    a.rel = 'noopener';
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(function() {
+      try { document.body.removeChild(a); } catch(e) {}
+      try { URL.revokeObjectURL(url2); } catch(e) {}
+    }, 2000);
+    showToast('Файл скачан');
+  } catch(e) {
+    try {
+      var reader2 = new FileReader();
+      reader2.onload = function() {
+        var a2 = document.createElement('a');
+        a2.href = reader2.result;
+        a2.download = filename;
+        document.body.appendChild(a2);
+        a2.click();
+        setTimeout(function() { a2.remove(); }, 500);
+        showToast('Файл скачан');
+      };
+      reader2.readAsDataURL(blob);
+    } catch(e2) { showToast('Скачивание не поддерживается'); }
+  }
+}
+
+// ============================================================
+// PWA
+// ============================================================
+(function initPWA() {
+  var ua = navigator.userAgent;
+  var isIOS = /iPad|iPhone|iPod/.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+  var isAndroid = /Android/i.test(ua);
+  var isFirefox = /Firefox\//i.test(ua) && !/Seamoney/i.test(ua);
+  var isSafari = /^((?!chrome|android).)*safari/i.test(ua);
+  var isEdge = /Edg\//i.test(ua);
+  var isChrome = /Chrome\//i.test(ua) && !isEdge;
+  var isMobile = isIOS || isAndroid;
+
+  function svgToPng(size, cb) {
+    var svg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ' + size + ' ' + size + '">' +
+      '<defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1">' +
+      '<stop offset="0" stop-color="#f0e7d4"/>' +
+      '<stop offset="0.5" stop-color="#ece2cd"/>' +
+      '<stop offset="1" stop-color="#ddd0b2"/>' +
+      '</linearGradient></defs>' +
+      '<rect width="' + size + '" height="' + size + '" rx="' + (size * 0.21) + '" fill="url(#g)"/>' +
+      '<rect x="' + (size * 0.05) + '" y="' + (size * 0.05) + '" width="' + (size * 0.9) + '" height="' + (size * 0.9) + '" rx="' + (size * 0.17) + '" fill="none" stroke="#3a2c1c" stroke-width="' + (size * 0.012) + '" opacity="0.35"/>' +
+      '<text x="' + (size / 2) + '" y="' + (size * 0.7) + '" font-size="' + (size * 0.62) + '" text-anchor="middle" font-family="Georgia,serif" font-weight="700" fill="#8b2019">Х</text>' +
+    '</svg>';
+    try {
+      var blob = new Blob([svg], { type: 'image/svg+xml;charset=utf-8' });
+      var url = URL.createObjectURL(blob);
+      var img = new Image();
+      img.onload = function() {
+        try {
+          var c = document.createElement('canvas');
+          c.width = size; c.height = size;
+          c.getContext('2d').drawImage(img, 0, 0, size, size);
+          URL.revokeObjectURL(url);
+          cb(c.toDataURL('image/png'));
+        } catch(e) { URL.revokeObjectURL(url); cb(null); }
+      };
+      img.onerror = function() { URL.revokeObjectURL(url); cb(null); };
+      img.src = url;
+    } catch(e) { cb(null); }
+  }
+
+  svgToPng(192, function(icon192) {
+    svgToPng(512, function(icon512) {
+      var icons = [];
+      if (icon192) icons.push({ src: icon192, sizes: '192x192', type: 'image/png', purpose: 'any' });
+      if (icon512) {
+        icons.push({ src: icon512, sizes: '512x512', type: 'image/png', purpose: 'any' });
+        icons.push({ src: icon512, sizes: '512x512', type: 'image/png', purpose: 'maskable' });
+      }
+      var startUrl = location.href.split('#')[0];
+      var scopeUrl = startUrl.replace(/[^\/]*$/, '');
+      var manifest = {
+        name: 'ХАХАХА',
+        short_name: 'ХАХАХА',
+        description: 'Головоломка с надписями',
+        start_url: startUrl,
+        scope: scopeUrl,
+        display: 'standalone',
+        orientation: 'any',
+        background_color: '#ece2cd',
+        theme_color: '#ece2cd',
+        lang: 'ru',
+        icons: icons
+      };
+      try {
+        var json = JSON.stringify(manifest);
+        var mBlob = new Blob([json], { type: 'application/manifest+json' });
+        var mUrl = URL.createObjectURL(mBlob);
+        var link = document.querySelector('link[rel="manifest"]');
+        if (!link) {
+          link = document.createElement('link');
+          link.rel = 'manifest';
+          document.head.appendChild(link);
+        }
+        link.href = mUrl;
+      } catch(e) {}
+    });
+  });
+
+  if ('serviceWorker' in navigator) {
+    if (location.protocol === 'https:' || location.hostname === 'localhost' || location.hostname === '127.0.0.1') {
+      var swCode =
+        'var CACHE="hahaha-v1";' +
+        'self.addEventListener("install",function(e){self.skipWaiting();e.waitUntil(caches.open(CACHE).then(function(c){return c.add(location.href).catch(function(){});}));});' +
+        'self.addEventListener("activate",function(e){e.waitUntil(self.clients.claim());});' +
+        'self.addEventListener("fetch",function(e){' +
+          'if(e.request.method!=="GET")return;' +
+          'e.respondWith(caches.match(e.request).then(function(r){' +
+            'if(r)return r;' +
+            'return fetch(e.request).then(function(resp){' +
+              'if(resp&&resp.status===200&&resp.type==="basic"){' +
+                'var clone=resp.clone();' +
+                'caches.open(CACHE).then(function(c){c.put(e.request,clone).catch(function(){});});' +
+              '}return resp;' +
+            '}).catch(function(){return caches.match(location.href);});' +
+          '}));' +
+        '});';
+      try {
+        var swBlob = new Blob([swCode], { type: 'application/javascript' });
+        var swUrl = URL.createObjectURL(swBlob);
+        navigator.serviceWorker.register(swUrl).catch(function() {});
+      } catch(e) {}
+    }
+  }
+
+  var deferredPrompt = null;
+  var installBtns = [];
+  var ib = document.getElementById('install-btn');
+  var ibs = document.getElementById('install-btn-start');
+  if (ib) installBtns.push(ib);
+  if (ibs) installBtns.push(ibs);
+
+  function showInstallBtns() {
+    installBtns.forEach(function(b) {
+      if (b.id === 'install-btn') b.style.display = 'flex';
+      else b.style.display = 'inline-block';
+    });
+  }
+  function hideInstallBtns() {
+    installBtns.forEach(function(b) { b.style.display = 'none'; });
+  }
+
+  window.addEventListener('beforeinstallprompt', function(e) {
+    e.preventDefault();
+    deferredPrompt = e;
+    showInstallBtns();
+  });
+
+  window.addEventListener('appinstalled', function() {
+    deferredPrompt = null;
+    hideInstallBtns();
+    showToast('Приложение установлено');
+  });
+
+  if (isIOS && !window.navigator.standalone) showInstallBtns();
+  if (isFirefox && isMobile) showInstallBtns();
+
+  installBtns.forEach(function(btn) {
+    btn.addEventListener('click', function() {
+      if (deferredPrompt) {
+        deferredPrompt.prompt();
+        deferredPrompt.userChoice.then(function(choice) {
+          if (choice.outcome === 'accepted') {
+            hideInstallBtns();
+            showToast('Установлено');
+          }
+          deferredPrompt = null;
+        });
+        return;
+      }
+      if (isIOS) { showIOSInstallHint(); return; }
+      if (isFirefox && isMobile) { showFirefoxInstallHint(); return; }
+      showDesktopInstallHint();
+    });
+  });
+
+  function showModal(title, steps, note) {
+    var overlay = document.createElement('div');
+    overlay.style.cssText = 'position:fixed;inset:0;z-index:9999;background:rgba(30,22,14,0.92);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);display:flex;align-items:center;justify-content:center;padding:24px;';
+    var stepsHtml = steps.map(function(s) { return '<li style="margin-bottom:6px;">' + s + '</li>'; }).join('');
+    var noteHtml = note ? '<div style="font-size:11px;color:#5a4a38;font-style:italic;margin:10px 0 14px;">' + note + '</div>' : '';
+    overlay.innerHTML =
+      '<div style="background:#ece2cd;border:1px solid #3a2c1c;padding:24px 28px;max-width:420px;border-radius:2px;box-shadow:6px 6px 0 rgba(58,44,28,0.35);font-family:\'Courier New\',monospace;color:#26201a;text-align:left;line-height:1.6;box-sizing:border-box;max-height:90vh;overflow-y:auto;">' +
+        '<div style="font-family:Georgia,serif;font-size:20px;font-weight:700;margin-bottom:12px;color:#8b2019;">' + title + '</div>' +
+        '<ol style="font-size:13px;padding-left:20px;margin-bottom:12px;">' + stepsHtml + '</ol>' +
+        noteHtml +
+        '<button id="__modal_ok" style="width:100%;padding:12px;font-family:inherit;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;background:#26201a;color:#ece2cd;border:1px solid #3a2c1c;cursor:pointer;border-radius:2px;">Понятно</button>' +
+      '</div>';
+    document.body.appendChild(overlay);
+    function close() { if (overlay.parentNode) overlay.parentNode.removeChild(overlay); }
+    overlay.querySelector('#__modal_ok').addEventListener('click', close);
+    overlay.addEventListener('click', function(e) { if (e.target === overlay) close(); });
+  }
+
+  function showIOSInstallHint() {
+    showModal('Установить приложение',
+      ['Нажми <b>Поделиться</b> в Safari (квадрат со стрелкой)',
+       'Пролистай и выбери <b>«На экран Домой»</b>',
+       'Нажми <b>Добавить</b> — иконка появится на рабочем столе'],
+      'Работает только в Safari на iPhone и iPad');
+  }
+
+  function showFirefoxInstallHint() {
+    showModal('Установить приложение',
+      ['Открой меню Firefox (три точки)',
+       'Выбери <b>«Установить»</b> или <b>«Добавить на главный экран»</b>',
+       'Подтверди — иконка появится'],
+      'В Firefox установка есть с версии 96');
+  }
+
+  function showDesktopInstallHint() {
+    var name = isChrome ? 'Chrome' : isEdge ? 'Edge' : isSafari ? 'Safari' : 'браузера';
+    showModal('Установить приложение',
+      ['Открой меню ' + name + ' (три точки или ⋯)',
+       'Выбери <b>«Установить приложение»</b>',
+       'Подтверди — приложение появится в системе'],
+      'Safari на macOS: Файл → Добавить в Dock');
+  }
+})();
+
+// ============================================================
+// СЕКРЕТЫ
+// ============================================================
+var KONAMI = ['ArrowUp','ArrowUp','ArrowDown','ArrowDown','ArrowLeft','ArrowRight','ArrowLeft','ArrowRight','b','a'];
+var konamiBuffer = [];
+var typedBuffer = '';
+
+document.addEventListener('keydown', function(e) {
+  var key = e.key;
+  konamiBuffer.push(key.length === 1 ? key.toLowerCase() : key);
+  if (konamiBuffer.length > KONAMI.length) konamiBuffer.shift();
+  if (konamiBuffer.join(',') === KONAMI.join(',')) {
+    konamiBuffer = [];
+    activateRainbow();
+  }
+  if (key.length === 1) {
+    typedBuffer += key.toLowerCase();
+    if (typedBuffer.length > 20) typedBuffer = typedBuffer.slice(-20);
+    if (typedBuffer.slice(-6) === 'хахаха') {
+      typedBuffer = '';
+      stats.wordUsed = true;
+      saveStats();
+      checkAchievements();
+      showToast('Раскрываю тройку');
+      autoRevealTriple();
+    }
+  }
+});
+
+function activateRainbow() {
+  if (rainbowMode) return;
+  rainbowMode = true;
+  stats.rainbowActivated = true;
+  saveStats();
+  checkAchievements();
+  showToast('Радужный режим');
+  tiles.forEach(function(t) {
+    if (t.state !== 'world' || !t.el) return;
+    var h = Math.random() * 360;
+    var sat = 32 + Math.random() * 20;
+    var l = 40 + Math.random() * 15;
+    t.el.style.setProperty('--bg', 'hsl(' + h + ',' + sat + '%,' + l + '%)');
+    t.el.style.setProperty('--fg', l < 46 ? '#f0e8d5' : '#241a10');
+  });
+}
+
+function autoRevealTriple() {
+  var accessible = tiles.filter(function(t) { return t.state === 'world' && !t.blocked; });
+  var by = {};
+  accessible.forEach(function(t) {
+    if (!by[t.variantIndex]) by[t.variantIndex] = [];
+    by[t.variantIndex].push(t);
+  });
+  for (var v in by) {
+    if (by[v].length >= MATCH_SIZE) {
+      by[v].slice(0, MATCH_SIZE).forEach(function(t) {
+        if (!t.el) return;
+        var old = t.el.style.boxShadow;
+        t.el.style.boxShadow = '0 0 0 3px #8b2019, 0 0 20px rgba(139,32,25,0.7)';
+        setTimeout(function() { if (t.el) t.el.style.boxShadow = old; }, 2200);
+      });
+      return;
+    }
+  }
+}
+
+titleEl.addEventListener('click', function() {
+  stats.titleClicks++;
+  saveStats();
+  titleEl.style.letterSpacing = (0.14 + (stats.titleClicks % 8) * 0.02) + 'em';
+  setTimeout(function() { titleEl.style.letterSpacing = '0.14em'; }, 200);
+  if (stats.titleClicks >= 7) checkAchievements();
+});
+
+// ============================================================
+// КНОПКИ
+// ============================================================
+$('start-btn').addEventListener('click', function() { showGameUI(); startGame(); });
+$('next-level-btn').addEventListener('click', nextLevel);
+$('replay-btn').addEventListener('click', function() { endScreen.classList.add('hidden'); showGameUI(); startGame(); });
+$('back-to-menu-btn').addEventListener('click', function() { hideGameUI(); returnToMenu(); });
+$('exit-btn').addEventListener('click', function() {
+  if (!confirm('Выйти в главное меню?')) return;
+  hideGameUI();
+  returnToMenu();
+});
+$('reset-game-btn').addEventListener('click', resetCurrentGame);
+$('shuffle-btn').addEventListener('click', reshuffle);
+$('view-btn').addEventListener('click', function() { resetCamera(); showToast('Вид сброшен'); });
+$('download-btn').addEventListener('click', downloadOffline);
+
+// ============================================================
+// INIT
+// ============================================================
+buildTraySlots();
+updateCounters();
+checkAchievements();
+hideGameUI();
+startLevelBadge.textContent = 'Уровень ' + currentLevel + ' · ' + LEVEL_VARIANTS[currentLevel - 1] + ' надписей';
+</script>
+</body>
+    </html>
