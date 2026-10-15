@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>ХАХАХА</title>
+<link rel="stylesheet" href="style.css">
+<meta name="theme-color" content="#ece2cd">
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Crect width='512' height='512' rx='108' fill='%23ece2cd'/%3E%3Ctext x='256' y='358' font-size='300' text-anchor='middle' font-family='Georgia' font-weight='700' fill='%238b2019'%3EХ%3C/text%3E%3C/svg%3E">
+</head>
+<body>
+
+<div class="frame"></div>
+
+<div class="hud" id="hud">
+  <div class="hud-item level" id="hud-level">Уровень<span class="value" id="level-display">1</span></div>
+  <div class="hud-item">Собрано<span class="value" id="pairs">0/25</span></div>
+  <div class="hud-item">Ходы<span class="value" id="moves">0</span></div>
+  <div class="hud-item">Время<span class="value" id="time">0:00</span></div>
+  <div class="hud-item coins" id="hud-coins">Монеты<span class="value" id="coins-display">0</span></div>
+</div>
+
+<div id="level-progress"><div id="level-progress-fill"></div></div>
+
+<div class="controls" id="controls">
+  <button class="ctl-btn gold" id="shop-btn">🛒 Магазин</button>
+  <button class="ctl-btn gold" id="levels-btn">Уровни</button>
+  <button class="ctl-btn seal" id="menu-btn">Достижения <span class="count" id="menu-count">0/27</span></button>
+  <button class="ctl-btn hint-btn" id="use-hint-btn" style="display:none">💡 Подсказка</button>
+  <button class="ctl-btn skip-btn" id="use-skip-btn" style="display:none">⏭ Пропуск</button>
+  <button class="ctl-btn" id="shuffle-btn">Перемешать</button>
+  <button class="ctl-btn" id="view-btn">Сброс вида</button>
+  <button class="ctl-btn seal" id="reset-game-btn">Заново</button>
+  <button class="ctl-btn" id="exit-btn">В меню</button>
+  <a href="igra.html" download="hahaha.html" class="ctl-btn green">⬇ Скачать игру</a>
+</div>
+
+<div id="viewport"><div id="world"></div></div>
+
+<div id="tray">
+  <div id="tray-label">Собранные</div>
+  <div id="tray-slots"></div>
+</div>
+
+<div class="levels-panel" id="levels-panel">
+  <div class="levels-inner">
+    <div class="levels-header"><span>Выбор уровня</span><span class="progress-info" id="levels-progress-info">Пройдено: 0 / 10</span></div>
+    <div class="levels-content"><div class="levels-grid" id="levels-grid"></div></div>
+    <div class="levels-footer"><button class="menu-btn" id="close-levels">Закрыть</button></div>
+  </div>
+</div>
+
+<div class="shop-panel" id="shop-panel">
+  <div class="shop-inner">
+    <div class="shop-header"><span>🛒 Магазин</span><span class="balance" id="shop-balance">0 🪙</span></div>
+    <div class="shop-content">
+      <div class="shop-grid" id="shop-grid"></div>
+      <div class="ref-box">
+        <h4>👥 Пригласи друга</h4>
+        <div class="ref-row"><input type="text" class="ref-input" id="ref-my-code" readonly><button class="ref-btn" id="ref-copy">Копировать</button></div>
+        <div class="ref-hint" style="margin-bottom:10px;">Отправь этот код другу — он введёт его ниже, и вы оба получите по 100 🪙</div>
+        <div class="ref-row"><input type="text" class="ref-input" id="ref-friend-code" placeholder="Код друга" maxlength="8"><button class="ref-btn" id="ref-apply">Ввести</button></div>
+      </div>
+    </div>
+    <div class="shop-footer"><button class="menu-btn" id="close-shop">Закрыть</button></div>
+  </div>
+</div>
+
+<div class="menu-panel" id="menu-panel">
+  <div class="menu-inner">
+    <div class="menu-tabs">
+      <button class="menu-tab active" data-tab="stats">Статистика</button>
+      <button class="menu-tab" data-tab="settings">Настройки</button>
+      <button class="menu-tab" data-tab="bronze">Бронза <span class="tab-badge" id="bronze-badge">0/0</span></button>
+      <button class="menu-tab" data-tab="silver">Серебро <span class="tab-badge" id="silver-badge">0/0</span></button>
+      <button class="menu-tab" data-tab="gold">Золото <span class="tab-badge" id="gold-badge">0/0</span></button>
+    </div>
+    <div class="menu-content">
+      <div class="menu-pane active" id="pane-stats">
+        <div class="section-title">Общая статистика</div>
+        <div class="stats-grid" id="stats-grid"></div>
+        <div class="section-title" style="margin-top:18px;">Лучшие результаты</div>
+        <div class="stats-grid" id="stats-best"></div>
+      </div>
+      <div class="menu-pane" id="pane-settings">
+        <div class="section-title">Настройки</div>
+        <div class="settings-row"><div class="label">Тема<span class="sub">Светлая или тёмная</span></div><button class="settings-btn" id="theme-toggle">🌙 Тёмная</button></div>
+        <div class="settings-row"><div class="label">Сбросить уровень<span class="sub">Начать заново</span></div><button class="settings-btn" id="reset-current-level">Сбросить</button></div>
+        <div class="settings-row"><div class="label">Сбросить уровни<span class="sub">На 1 уровень</span></div><button class="settings-btn danger" id="reset-levels">Сбросить</button></div>
+        <div class="settings-row"><div class="label">Сбросить ачивки<span class="sub">Все закроются</span></div><button class="settings-btn danger" id="reset-ach">Сбросить</button></div>
+        <div class="settings-row"><div class="label">Сбросить монеты<span class="sub">Обнулить баланс</span></div><button class="settings-btn danger" id="reset-coins">Сбросить</button></div>
+        <div class="settings-row"><div class="label">Полная очистка<span class="sub">Удалить всё</span></div><button class="settings-btn danger" id="full-reset">Стереть</button></div>
+      </div>
+      <div class="menu-pane" id="pane-bronze"><div class="section-title">Бронза <span class="hint" id="hint-bronze"></span></div><div id="list-bronze"></div></div>
+      <div class="menu-pane" id="pane-silver"><div class="section-title">Серебро <span class="hint" id="hint-silver"></span></div><div id="list-silver"></div></div>
+      <div class="menu-pane" id="pane-gold"><div class="section-title">Золото <span class="hint" id="hint-gold"></span></div><div id="list-gold"></div></div>
+    </div>
+    <div class="menu-footer"><button class="menu-btn" id="close-menu">Продолжить</button></div>
+  </div>
+</div>
+
+<div class="overlay" id="start-screen">
+  <div class="level-badge" id="start-level-badge">Уровень 1 · 25 надписей</div>
+  <h1 id="title">ХАХАХА</h1>
+  <p>Собирай по три одинаковые надписи.</p>
+  <p>Нажми на плитку — она уедет в табличку внизу.</p>
+  <p>Три одинаковые исчезнут. Заполнишь табличку — конец.</p>
+  <p class="coins-hint">🪙 За уровень N → N × 5 монет</p>
+  <div class="btn-row">
+    <button class="btn btn-seal" id="start-btn">Начать</button>
+    <button class="btn btn-secondary" id="choose-level-btn">Уровни</button>
+    <a href="igra.html" download="hahaha.html" class="btn btn-green">⬇ Скачать игру</a>
+  </div>
+</div>
+
+<div class="overlay hidden" id="end-screen">
+  <div class="level-badge" id="end-level-badge">Уровень 1</div>
+  <h1 id="end-title">Уровень пройден</h1>
+  <p id="end-subtitle">Все тройки разобраны.</p>
+  <p style="margin-top:14px;" id="end-stats-label">Ходов сделано:</p>
+  <div class="result-score" id="final-moves">0</div>
+  <p id="time-result"></p>
+  <p id="coins-earned"></p>
+  <p id="rank"></p>
+  <div class="btn-row">
+    <button class="btn btn-seal" id="next-level-btn">Следующий</button>
+    <button class="btn btn-secondary" id="replay-btn">Повторить</button>
+    <button class="btn btn-secondary" id="back-to-menu-btn">В меню</button>
+  </div>
+</div>
+
+<script src="script.js"></script>
+</body>
+                          </html>
