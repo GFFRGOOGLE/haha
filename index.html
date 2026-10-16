@@ -246,7 +246,7 @@ body.dark::before{opacity:.3}
       <div class="menu-pane active" id="pane-stats"><div class="section-title">Общая статистика</div><div class="stats-grid" id="stats-grid"></div><div class="section-title" style="margin-top:18px;">Лучшие результаты</div><div class="stats-grid" id="stats-best"></div></div>
       <div class="menu-pane" id="pane-settings">
         <div class="section-title">Настройки</div>
-        <div class="settings-row"><div class="label">Тема<span class="sub">Светлая или тёмная</span></div><button class="settings-btn" id="theme-toggle">🌙 Тёмная</button></div>
+        <div class="settings-row"><div class="label">Тема<span class="sub">Светлая или тёмная</span></div><button class="settings-btn" id="theme-toggle">☀ Светлая</button></div>
         <div class="settings-row"><div class="label">Сбросить уровень<span class="sub">Начать заново</span></div><button class="settings-btn" id="reset-current-level">Сбросить</button></div>
         <div class="settings-row"><div class="label">Сбросить уровни<span class="sub">Вернуться на 1</span></div><button class="settings-btn danger" id="reset-levels">Сбросить</button></div>
         <div class="settings-row"><div class="label">Сбросить ачивки<span class="sub">Все закроются</span></div><button class="settings-btn danger" id="reset-ach">Сбросить</button></div>
@@ -295,8 +295,12 @@ body.dark::before{opacity:.3}
 var storage=(function(){var a=false;try{var t='__hhh__';localStorage.setItem(t,'1');localStorage.removeItem(t);a=true}catch(e){a=false}var m={};return{get:function(k){if(a){try{return localStorage.getItem(k)}catch(e){return m[k]||null}}return m[k]||null},set:function(k,v){if(a){try{localStorage.setItem(k,v);return}catch(e){m[k]=v;return}}m[k]=v},remove:function(k){if(a){try{localStorage.removeItem(k);return}catch(e){delete m[k];return}}delete m[k]}}})();
 var MATCH_SIZE=3,TRAY_SIZE=9;
 var LEVEL_VARIANTS=[25,50,100,150,200,250,300,400,500,600];
-var BASE_TEXTS=['Хахах','ХАХАХ','Ха-хах','Хахаха','Ахаха','Хаханьки','Хихих','Хо-хо-хо','Хе-хе','Хихихи','Хах-хах','Хо-хо','Хахахаха','Ахахаха','Хи-хи','Ха-ха','Хохо','Хе-хе-хе','Хи-хи-хи','Ха-ха-ха','Хихихаха','Хохотание','Хихиканье','Хи-хи-хи-хи','Хо-хо-хо-хо','Смешинка','Смехотун','Хохотун','Хихиханьки','Хахахахаха'];
-function generateTexts(c){var o=[];for(var i=0;i<c;i++){var b=BASE_TEXTS[i%BASE_TEXTS.length];var cy=Math.floor(i/BASE_TEXTS.length);o.push(cy===0?b:b+' '+(cy+1))}return o}
+var BASE_TEXTS=['Ха','Хаха','Хахаха','Хахахаха','Хахахахаха','Хахах','ХАХАХ','Ха-ха','Ха-ха-ха','Ха-ха-ха-ха','Ха-хах','Хах-хах','Хахахахахаха','Хаханьки','Хахоньки','Хахатушки','Хахатуньки','Хо','Хохо','Хохохо','Хохохохо','Хо-хо','Хо-хо-хо','Хо-хо-хо-хо','Хохот','Хохоток','Хохотня','Хохотун','Хохотунья','Хохотушка','Хохотунчик','Хохма','Хохмач','Хохмить','Хохотание','Хохотать','Хохотливо','Хи','Хихи','Хихихи','Хихихихи','Хи-хи','Хи-хи-хи','Хи-хи-хи-хи','Хихиканье','Хихикнуть','Хихикун','Хихиханьки','Хихихаха','Хихихахаха','Хихаха','Хихахаха','Хихахахаха','Хе','Хехе','Хехехе','Хе-хе','Хе-хе-хе','Хе-хе-хе-хе','Хехехехе','Аха','Ахаха','Ахахаха','Ахахахаха','Аха-ха','Ахахахахаха','Аха-ха-ха','Ахахахахахаха','Охо','Охохо','Охохохо','Охо-хо','Охо-хо-хо','Охохохохо','Смех','Смешинка','Смехач','Смехун','Смехотун','Смехота','Смехотня','Смешок','Смешки','Смешливо','Смешнота','Смехобомба','Смехолёт','Смеховарня','Смехотерапия','Смехопад','Смехотворец','Смехолюб','Смехоголос','Смехозвон','Смехогром','Смехокат','Смехогон','Смехоход','Смехоцикл','Смехомобиль','Смехобус','Смехопоезд','Смехолайнер','Смехоракета','Смехомёт','Смехострел','Смехобой','Смехолом','Смехопрыг','Смеховал','Смехотвор','Смехогонка','Смехозавр','Смехокот','Смехопёс','Смехомышь','Смехослон','Смехокит','Смехолис','Смехозаяц','Смеховолк','Смехомедведь','Смехолось','Смехоолень','Смехоеж','Смехокрот','Смехобобр','Смехобарсук','Смехосуслик','Смехохомяк','Ржач','Ржачка','Ржака','Ржачьё','Ржачный','Ржачно','Ржачок','Ржачик','Прикол','Приколюха','Прикольчик','Прикольно','Приколист','Приколистка','Угар','Угарчик','Угарно','Угараем','Угареть','Угарный','Гогот','Гоготун','Гоготать','Гоготня','Гоготание','Муха-ха-ха-ха','Смехохаха','Смехобород','Смехобрюх','Смехозуб','Смехогуб','Смехоглаз','Смехолоб','Смехонос','Смехоух','Смехорот','Смехотоп','Смехопляс','Смехоскок','Смехогрохот','Смехобум','Смехобумба','Смехоком','Смехокаша','Смехоборщ','Смехоплюс','Смехоминус','Смехобонус','Смехоплюха','Смехобрызг','Смехоплеск','Хи-хи-хи-ха','Хо-хо-хо-ха','Ха-ха-ха-хи','Хе-хе-хе-ха','Хихахаха','Хахахах','Хохохох','Хехехех','Хихихих','Смехопадение','Смехокружение','Смехоголовый','Смехоглазый','Смехозубый','Смехородный','Смехолюбивый','Смехотворный','Смехонаполненный','Смехонесущий'];
+function generateTexts(c){
+  var pool = BASE_TEXTS.slice();
+  for(var i=pool.length-1;i>0;i--){var j=Math.floor(Math.random()*(i+1));var t=pool[i];pool[i]=pool[j];pool[j]=t}
+  return pool.slice(0,c);
+}
 function colorFor(i){var h=(i*137.508)%360;var s=32+(i%4)*6;var l=40+(i%5)*5;return{bg:'hsl('+h+','+s+'%,'+l+'%)',fg:l<46?'#f0e8d5':'#241a10',border:'hsl('+h+','+s+'%,'+Math.max(15,l-18)+'%)',shadow:'hsl('+h+','+s+'%,'+Math.max(10,l-26)+'%)'}}
 function levelConfig(v){var t=v*MATCH_SIZE;var w=Math.max(1400,Math.min(6000,Math.ceil(Math.sqrt(t)*140)));var fs,pad;if(t<=75){fs=34;pad=[17,28]}else if(t<=150){fs=28;pad=[15,24]}else if(t<=300){fs=22;pad=[12,19]}else if(t<=500){fs=19;pad=[11,16]}else if(t<=800){fs=17;pad=[10,14]}else if(t<=1200){fs=15;pad=[9,13]}else if(t<=1800){fs=14;pad=[8,11]}else{fs=12;pad=[7,10]}return{variants:v,total:t,worldSize:w,fs:fs,pad:pad}}
 
@@ -444,7 +448,7 @@ slot.appendChild(el);idx++});
 trayEl.classList.toggle('warning',trayList.length>=TRAY_SIZE-1)}
 function measureTile(text,fs,padX,padY){var w=Math.ceil(text.length*fs*0.6)+padX*2+6;var h=Math.ceil(fs*1.4)+padY*2+6;return{w:w,h:h}}
 function buildBoard(){worldEl.innerHTML='';tiles=[];trayList=[];matchesFound=0;moves=0;currentWinStreak=0;maxTrayUsedThisGame=0;processingMatches=false;
-currentConfig=levelConfig(LEVEL_VARIANTS[currentLevel-1]);totalVariants=currentConfig.variants;
+currentConfig=levelConfig(LEVEL_VARIANTS[currentLevel-1]);totalVariants=Math.min(currentConfig.variants, BASE_TEXTS.length);
 worldW=worldH=currentConfig.worldSize;worldCX=worldCY=worldW/2;pileRadius=worldW*0.5;
 worldEl.style.width=worldW+'px';worldEl.style.height=worldH+'px';
 pairsEl.textContent='0/'+totalVariants;movesEl.textContent='0';levelDisplayEl.textContent=String(currentLevel);progressFill.style.width='0%';
@@ -680,7 +684,7 @@ if(currentLevel<LEVEL_VARIANTS.length){currentLevel++;saveLevel();updateShopItem
 else{endLevelBadge.textContent='Уровень '+currentLevel+' пропущен';endTitle.textContent='Игра пройдена';endSubtitle.textContent='Все уровни позади.';
 finalMovesEl.textContent='—';timeResultEl.textContent='';coinsEarnedEl.textContent='';rankEl.textContent='';
 $('next-level-btn').style.display='none';endScreen.classList.remove('hidden')}}
-function updateThemeButton(){var b=$('theme-toggle');if(!b)return;b.textContent=theme==='dark'?'☀ Светлая':'🌙 Тёмная'}
+function updateThemeButton(){var b=$('theme-toggle');if(!b)return;b.textContent=theme==='dark'?'🌙 Тёмная':'☀ Светлая'}
 function toggleTheme(){theme=theme==='dark'?'light':'dark';document.body.classList.toggle('dark',theme==='dark');storage.set(K.theme,theme);updateThemeButton()}
 var KONAMI=['ArrowUp','ArrowUp','ArrowDown','ArrowDown','ArrowLeft','ArrowRight','ArrowLeft','ArrowRight','b','a'];
 var konamiBuffer=[],typedBuffer='';
@@ -760,4 +764,4 @@ updateCoinsDisplay();
 startLevelBadge.textContent='Уровень '+currentLevel+' · '+LEVEL_VARIANTS[currentLevel-1]+' надписей';
 </script>
 </body>
-    </html>
+</html>
